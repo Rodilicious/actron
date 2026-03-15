@@ -417,6 +417,7 @@ function saveSettings() {
     pollInterval: state.pollInterval,
     guardianThreshold: state.guardianThreshold,
     gracePeriodMin: state.gracePeriodMin,
+    guardianEnabled: state.guardianEnabled,
     ejsService:  document.getElementById('ejs-service').value,
     ejsTemplate: document.getElementById('ejs-template').value,
     ejsPubkey:   document.getElementById('ejs-pubkey').value,
@@ -434,6 +435,7 @@ function loadSettings() {
     if (s.ejsTemplate) document.getElementById('ejs-template').value = s.ejsTemplate;
     if (s.ejsPubkey)   document.getElementById('ejs-pubkey').value = s.ejsPubkey;
     if (s.zoneNames)   { state.zoneNames = s.zoneNames; renderZoneNameInputs(); }
+    if (s.guardianEnabled) { state.guardianEnabled = s.guardianEnabled; updateGuardianUI(); }
   } catch(e) {}
 }
 
