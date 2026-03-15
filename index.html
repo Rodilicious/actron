@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0d1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Actron">
+<title>Actron Connect</title>
+<link rel="manifest" href="manifest.json">
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b24;
+  --surface2: #1e2533;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.13);
+  --text: #e6edf3;
+  --muted: #7d8590;
+  --accent: #2f81f7;
+  --cool: #2f81f7;
+  --heat: #f47067;
+  --fan: #3dc9b0;
+  --auto: #bc8cff;
+  --success: #3fb950;
+  --danger: #f85149;
+  --warn: #d29922;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { height: 100%; }
+body {
+  font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.screen { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+.screen.active { display: flex; }
+.scroll-area { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 1rem; padding-bottom: 5rem; }
+.bottom-nav {
+  display: flex; border-top: 0.5px solid var(--border2);
+  background: var(--surface); padding-bottom: env(safe-area-inset-bottom, 0); flex-shrink: 0;
+}
+.nav-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  padding: 10px 0 8px; gap: 3px; background: none; border: none; color: var(--muted);
+  font-size: 10px; letter-spacing: 0.3px; cursor: pointer; transition: color 0.15s;
+}
+.nav-btn.active { color: var(--accent); }
+.nav-btn svg { width: 22px; height: 22px; }
+.top-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 1rem 10px; border-bottom: 0.5px solid var(--border); flex-shrink: 0;
+}
+.top-bar h2 { font-size: 17px; font-weight: 600; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); display: inline-block; margin-right: 6px; }
+.status-dot.online { background: var(--success); }
+.status-dot.error  { background: var(--danger); }
+.conn-label { font-size: 12px; color: var(--muted); display: flex; align-items: center; }
+.card { background: var(--surface); border: 0.5px solid var(--border2); border-radius: 12px; padding: 1rem 1.125rem; margin-bottom: 0.75rem; }
+.card-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 0.5rem; }
+.temp-row { display: flex; gap: 0.75rem; margin-bottom: 0.75rem; }
+.temp-card { flex: 1; background: var(--surface); border: 0.5px solid var(--border2); border-radius: 12px; padding: 1rem; text-align: center; }
+.temp-value { font-size: 42px; font-weight: 300; letter-spacing: -2px; line-height: 1; }
+.temp-label { font-size: 11px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.6px; }
+.temp-value.cool-color { color: var(--cool); }
+.temp-value.heat-color { color: var(--heat); }
+.mode-row { display: flex; gap: 8px; margin-bottom: 0.75rem; }
+.mode-pill {
+  flex: 1; padding: 9px 4px; border-radius: 8px; border: 0.5px solid var(--border2);
+  background: var(--surface2); color: var(--muted); font-size: 12px; font-weight: 500;
+  text-align: center; cursor: pointer; transition: all 0.15s;
+}
+.mode-pill.active-cool { background: rgba(47,129,247,0.15); border-color: var(--cool); color: var(--cool); }
+.mode-pill.active-heat { background: rgba(244,112,103,0.15); border-color: var(--heat); color: var(--heat); }
+.mode-pill.active-fan  { background: rgba(61,201,176,0.15);  border-color: var(--fan);  color: var(--fan);  }
+.mode-pill.active-auto { background: rgba(188,140,255,0.15); border-color: var(--auto); color: var(--auto); }
+.set-temp-ctrl { display: flex; align-items: center; justify-content: space-between; background: var(--surface2); border-radius: 10px; padding: 6px; }
+.temp-adj-btn {
+  width: 44px; height: 44px; border-radius: 8px; background: var(--surface);
+  border: 0.5px solid var(--border2); color: var(--text); font-size: 22px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.temp-adj-btn:active { background: var(--border2); }
+.set-temp-display { font-size: 32px; font-weight: 300; letter-spacing: -1px; }
+.zone-list { display: flex; flex-direction: column; gap: 8px; }
+.zone-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--surface2); border-radius: 8px; }
+.zone-name { font-size: 14px; }
+.zone-temp { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.toggle { width: 44px; height: 26px; border-radius: 13px; background: var(--surface); border: 0.5px solid var(--border2); position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
+.toggle.on { background: var(--accent); border-color: var(--accent); }
+.toggle::after { content: ''; position: absolute; width: 20px; height: 20px; border-radius: 10px; background: #fff; top: 2.5px; left: 2.5px; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+.toggle.on::after { transform: translateX(18px); }
+.power-btn { width: 80px; height: 80px; border-radius: 50%; border: 2px solid var(--border2); background: var(--surface2); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; margin: 0 auto; }
+.power-btn.on { border-color: var(--success); background: rgba(63,185,80,0.12); }
+.power-btn svg { width: 36px; height: 36px; color: var(--muted); transition: color 0.2s; }
+.power-btn.on svg { color: var(--success); }
+.guardian-card { background: var(--surface); border: 0.5px solid var(--border2); border-radius: 12px; padding: 1rem 1.125rem; margin-bottom: 0.75rem; }
+.guardian-card.armed { border-color: var(--warn); }
+.guardian-card.triggered { border-color: var(--danger); }
+.guardian-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+.guardian-title { font-size: 14px; font-weight: 500; }
+.badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+.badge-off    { background: rgba(125,133,144,0.15); color: var(--muted); }
+.badge-watch  { background: rgba(210,153,34,0.15);  color: var(--warn); }
+.badge-alert  { background: rgba(248,81,73,0.15);   color: var(--danger); }
+.badge-on     { background: rgba(63,185,80,0.15);   color: var(--success); }
+.countdown-wrap { display: none; text-align: center; background: rgba(210,153,34,0.08); border-radius: 8px; padding: 14px; margin-top: 8px; }
+.countdown-wrap.visible { display: block; }
+.countdown-num { font-size: 40px; font-weight: 300; color: var(--warn); letter-spacing: -2px; }
+.countdown-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.override-info { font-size: 12px; color: var(--warn); margin-bottom: 8px; }
+.setting-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 0.5px solid var(--border); }
+.setting-row:last-child { border-bottom: none; }
+.setting-label { font-size: 14px; }
+.setting-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.setting-input { width: 80px; background: var(--surface2); border: 0.5px solid var(--border2); border-radius: 8px; color: var(--text); font-size: 15px; padding: 6px 10px; text-align: right; }
+.setting-input:focus { outline: none; border-color: var(--accent); }
+.btn { width: 100%; padding: 13px; border-radius: 10px; border: none; font-size: 15px; font-weight: 500; cursor: pointer; transition: opacity 0.15s; }
+.btn:active { opacity: 0.8; }
+.btn-primary   { background: var(--accent); color: #fff; }
+.btn-danger    { background: rgba(248,81,73,0.12); color: var(--danger); border: 0.5px solid var(--danger); }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 0.5px solid var(--border2); }
+#login-screen { justify-content: center; align-items: center; padding: 2rem; gap: 1.5rem; }
+.brand { text-align: center; }
+.brand-icon { width: 76px; height: 76px; border-radius: 20px; background: linear-gradient(145deg, #1a2d4a, #2458a8); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 36px; }
+.brand h1 { font-size: 26px; font-weight: 600; letter-spacing: -0.5px; }
+.brand p  { color: var(--muted); font-size: 13px; margin-top: 4px; }
+.login-form { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 10px; }
+.input-group { display: flex; flex-direction: column; gap: 5px; }
+.input-group label { font-size: 12px; color: var(--muted); }
+.text-input { background: var(--surface); border: 0.5px solid var(--border2); border-radius: 10px; color: var(--text); font-size: 15px; padding: 12px 14px; width: 100%; }
+.text-input:focus { outline: none; border-color: var(--accent); }
+.error-msg { font-size: 13px; color: var(--danger); text-align: center; min-height: 18px; }
+.log-entry { padding: 8px 0; border-bottom: 0.5px solid var(--border); font-size: 13px; line-height: 1.5; }
+.log-time  { color: var(--muted); font-size: 11px; font-family: monospace; }
+.log-info  { color: var(--text); }
+.log-warn  { color: var(--warn); }
+.log-alert { color: var(--danger); }
+.log-ok    { color: var(--success); }
+.last-poll { font-size: 11px; color: var(--muted); text-align: center; padding: 4px 0; }
+.wake-warning { background: rgba(210,153,34,0.08); border: 0.5px solid rgba(210,153,34,0.25); border-radius: 8px; padding: 10px 12px; margin-bottom: 0.75rem; font-size: 12px; color: var(--warn); line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen" class="screen active">
+  <div class="brand">
+    <div class="brand-icon">❄️</div>
+    <h1>Actron Connect</h1>
+    <p>Temperature Guardian</p>
+  </div>
+  <div class="login-form">
+    <div class="input-group">
+      <label>Device ID</label>
+      <input class="text-input" id="inp-user" type="text" placeholder="ACONNECT001EC07D909C_0_2_4" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="input-group">
+      <label>User Access Token</label>
+      <input class="text-input" id="inp-key" type="text" placeholder="3ccf3bc3…" autocomplete="off" spellcheck="false">
+    </div>
+    <div id="login-error" class="error-msg"></div>
+    <button class="btn btn-primary" id="btn-login">Connect</button>
+    <button class="btn btn-secondary" id="btn-demo" style="margin-top:4px">Try Demo Mode</button>
+  </div>
+  <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:0.5rem;line-height:1.6">
+    In Chrome: go to actronair.com.au/aconnect → right-click → Inspect → Network tab → turn A/C on → right-click the PUT request → Copy as cURL. Your device ID and token are in that URL.
+  </p>
+</div>
+
+<!-- APP SCREEN -->
+<div id="app-screen" class="screen">
+
+  <!-- CONTROL TAB -->
+  <div id="tab-control" class="tab-content" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+    <div class="top-bar">
+      <h2>Control</h2>
+      <div class="conn-label">
+        <span class="status-dot" id="conn-dot"></span>
+        <span id="conn-label-text">Connecting…</span>
+      </div>
+    </div>
+    <div class="scroll-area">
+      <div class="wake-warning" id="wake-warning">⚠️ Keep this app open for Guardian monitoring to stay active.</div>
+      <div class="card">
+        <div class="card-label">System Power</div>
+        <div style="margin-bottom:1rem">
+          <button class="power-btn" id="power-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/>
+            </svg>
+          </button>
+          <div style="text-align:center;margin-top:8px;font-size:13px;color:var(--muted)" id="power-label">Off</div>
+        </div>
+        <div class="mode-row" id="mode-row">
+          <div class="mode-pill" data-mode="cool">Cool</div>
+          <div class="mode-pill" data-mode="heat">Heat</div>
+          <div class="mode-pill" data-mode="fan">Fan</div>
+          <div class="mode-pill" data-mode="auto">Auto</div>
+        </div>
+      </div>
+      <div class="temp-row">
+        <div class="temp-card">
+          <div class="temp-value cool-color" id="disp-room">--</div>
+          <div class="temp-label">Room temp</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">not available</div>
+        </div>
+        <div class="temp-card">
+          <div class="temp-value" id="disp-outside" style="color:var(--muted)">--</div>
+          <div class="temp-label">Outside</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">not available</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-label">Set Temperature</div>
+        <div class="set-temp-ctrl">
+          <button class="temp-adj-btn" id="btn-temp-down">−</button>
+          <div><span class="set-temp-display" id="disp-set-temp">22</span><span style="font-size:18px;color:var(--muted)">°C</span></div>
+          <button class="temp-adj-btn" id="btn-temp-up">+</button>
+        </div>
+      </div>
+      <div class="card" id="zones-card">
+        <div class="card-label">Zones</div>
+        <div class="zone-list" id="zone-list"><div style="color:var(--muted);font-size:13px">Loading zones…</div></div>
+      </div>
+      <div class="last-poll">Last poll: <span id="last-poll-time">never</span></div>
+    </div>
+  </div>
+
+  <!-- GUARDIAN TAB -->
+  <div id="tab-guardian" class="tab-content" style="flex:1;display:none;flex-direction:column;overflow:hidden;">
+    <div class="top-bar">
+      <h2>Temperature Guardian</h2>
+      <span class="badge badge-off" id="guardian-badge">Off</span>
+    </div>
+    <div class="scroll-area">
+      <div class="guardian-card" id="guardian-card">
+        <div class="guardian-header">
+          <div class="guardian-title">🛡️ Override Detection</div>
+          <div class="toggle" id="guardian-toggle"></div>
+        </div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:0.75rem">
+          Monitors the set temperature. If someone overrides it below your threshold on the wall panel, waits the grace period, then emails you and turns the A/C off. Resumes monitoring if it happens again.
+        </div>
+        <div class="setting-row" style="padding:8px 0">
+          <div>
+            <div class="setting-label">Min allowed set temp</div>
+            <div class="setting-sub">Alert triggered if set below this</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <input class="setting-input" id="g-threshold" type="number" min="16" max="30" value="22">
+            <span style="color:var(--muted);font-size:14px">°C</span>
+          </div>
+        </div>
+        <div class="setting-row" style="padding:8px 0;border-bottom:none">
+          <div>
+            <div class="setting-label">Grace period</div>
+            <div class="setting-sub">Wait before acting</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <input class="setting-input" id="g-grace" type="number" min="1" max="60" value="10">
+            <span style="color:var(--muted);font-size:14px">min</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="countdown-wrap" id="countdown-wrap">
+        <div class="override-info" id="override-info">Set temp overridden to <strong id="override-val">--</strong>°C</div>
+        <div class="countdown-num" id="countdown-num">--:--</div>
+        <div class="countdown-label">until A/C turns off</div>
+        <button class="btn btn-secondary" id="btn-cancel-countdown" style="margin-top:12px;width:auto;padding:8px 20px;font-size:13px">Cancel — temp was corrected</button>
+      </div>
+
+      <div class="card" style="margin-top:0.75rem">
+        <div class="card-label">Alert Email — EmailJS Setup</div>
+        <div class="setting-row" style="padding:8px 0">
+          <div class="setting-label">Service ID</div>
+          <input class="setting-input" id="ejs-service" type="text" placeholder="service_xxx" style="width:150px;text-align:left;font-size:13px">
+        </div>
+        <div class="setting-row" style="padding:8px 0">
+          <div class="setting-label">Template ID</div>
+          <input class="setting-input" id="ejs-template" type="text" placeholder="template_xxx" style="width:150px;text-align:left;font-size:13px">
+        </div>
+        <div class="setting-row" style="padding:8px 0">
+          <div class="setting-label">Public Key</div>
+          <input class="setting-input" id="ejs-pubkey" type="text" placeholder="your_public_key" style="width:150px;text-align:left;font-size:13px">
+        </div>
+        <div style="margin-top:10px;display:flex;align-items:center;gap:10px">
+          <button class="btn btn-secondary" id="btn-test-email" style="width:auto;padding:8px 16px;font-size:13px">Send test email</button>
+          <span id="email-test-result" style="font-size:12px;color:var(--muted)"></span>
+        </div>
+        <p style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.6">
+          Free at emailjs.com (200 emails/month). Alert sent to rod.crowder@opscentre.com.<br>
+          Template variables: <code style="color:var(--accent)">{{override_temp}}</code> <code style="color:var(--accent)">{{room_temp}}</code> <code style="color:var(--accent)">{{threshold}}</code> <code style="color:var(--accent)">{{action}}</code> <code style="color:var(--accent)">{{time}}</code>
+        </p>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Guardian Status</div>
+        <div id="guardian-status-text" style="font-size:13px;color:var(--muted);line-height:1.6">Guardian is off.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOG TAB -->
+  <div id="tab-log" class="tab-content" style="flex:1;display:none;flex-direction:column;overflow:hidden;">
+    <div class="top-bar">
+      <h2>Activity Log</h2>
+      <button class="btn btn-secondary" id="btn-clear-log" style="width:auto;padding:5px 12px;font-size:12px">Clear</button>
+    </div>
+    <div class="scroll-area" id="log-list">
+      <div style="color:var(--muted);font-size:13px;text-align:center;padding:2rem">No activity yet</div>
+    </div>
+  </div>
+
+  <!-- SETTINGS TAB -->
+  <div id="tab-settings" class="tab-content" style="flex:1;display:none;flex-direction:column;overflow:hidden;">
+    <div class="top-bar"><h2>Settings</h2></div>
+    <div class="scroll-area">
+      <div class="card">
+        <div class="card-label">Polling</div>
+        <div class="setting-row" style="border-bottom:none">
+          <div>
+            <div class="setting-label">Poll interval</div>
+            <div class="setting-sub">How often to check the unit</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <input class="setting-input" id="s-poll" type="number" min="1" max="60" value="15">
+            <span style="color:var(--muted);font-size:14px">min</span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-label">Connection</div>
+        <div class="setting-row">
+          <div class="setting-label">Device ID</div>
+          <div style="font-size:12px;color:var(--muted)" id="s-user-display"></div>
+        </div>
+        <div class="setting-row" style="border-bottom:none">
+          <div class="setting-label">Access Token</div>
+          <div style="font-size:12px;color:var(--muted)" id="s-key-display">••••</div>
+        </div>
+      </div>
+      <div class="card" id="zone-names-card">
+        <div class="card-label">Zone Names</div>
+        <div id="zone-name-inputs">
+          <div style="font-size:13px;color:var(--muted)">Poll the unit first to see zones.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-label">Actions</div>
+        <button class="btn btn-secondary" id="btn-poll-now" style="margin-bottom:8px">Poll Now</button>
+        <button class="btn btn-danger" id="btn-logout">Sign Out</button>
+      </div>
+      <div class="card">
+        <div class="card-label">About</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.7">
+          Actron Connect PWA v1.0<br>
+          API: que.actronair.com.au/rest/v0/device<br>
+          Alert email: rod.crowder@opscentre.com<br><br>
+          <span style="color:var(--warn)">Note:</span> Monitoring requires this app to stay open on screen. Use the Screen stays on option in Android display settings, or plug in to charge while monitoring.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-tab="control">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      Control
+    </button>
+    <button class="nav-btn" data-tab="guardian">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Guardian
+    </button>
+    <button class="nav-btn" data-tab="log">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Log
+    </button>
+    <button class="nav-btn" data-tab="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings
+    </button>
+  </nav>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+const ALERT_EMAIL = 'rod.crowder@opscentre.com';
+const ACTRON_API  = 'https://que.actronair.com.au/rest/v0/device';
+const MODE_MAP = { 2:'cool', 3:'heat', 4:'fan', 1:'auto', cool:2, heat:3, fan:4, auto:1 };
+
+window.state = {
+  auth: null, isDemo: false,
+  powerOn: false, currentMode: 'cool', setTemp: 22,
+  roomTemp: null, outsideTemp: null, zones: [],
+  pollInterval: 15, pollTimer: null,
+  zoneNames: {},
+  guardianEnabled: false, guardianThreshold: 22, gracePeriodMin: 10,
+  guardianState: 'idle',
+  countdownTimer: null, countdownEnd: null, overrideDetectedTemp: null,
+};
+
+function saveSettings() {
+  localStorage.setItem('actron-settings', JSON.stringify({
+    pollInterval: state.pollInterval,
+    guardianThreshold: state.guardianThreshold,
+    gracePeriodMin: state.gracePeriodMin,
+    zoneNames: state.zoneNames,
+    ejsService:  document.getElementById('ejs-service').value,
+    ejsTemplate: document.getElementById('ejs-template').value,
+    ejsPubkey:   document.getElementById('ejs-pubkey').value,
+  }));
+}
+
+function loadSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem('actron-settings') || '{}');
+    if (s.pollInterval)      { state.pollInterval = s.pollInterval; document.getElementById('s-poll').value = s.pollInterval; }
+    if (s.guardianThreshold) { state.guardianThreshold = s.guardianThreshold; document.getElementById('g-threshold').value = s.guardianThreshold; }
+    if (s.gracePeriodMin)    { state.gracePeriodMin = s.gracePeriodMin; document.getElementById('g-grace').value = s.gracePeriodMin; }
+    if (s.ejsService)  document.getElementById('ejs-service').value = s.ejsService;
+    if (s.ejsTemplate) document.getElementById('ejs-template').value = s.ejsTemplate;
+    if (s.ejsPubkey)   document.getElementById('ejs-pubkey').value = s.ejsPubkey;
+    if (s.zoneNames)   { state.zoneNames = s.zoneNames; renderZoneNameInputs(); }
+  } catch(e) {}
+}
+
+let logs = [];
+function addLog(msg, type = 'info') {
+  const time = new Date().toLocaleTimeString('en-AU', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  logs.unshift({ time, msg, type });
+  if (logs.length > 300) logs.pop();
+  renderLog();
+}
+function renderLog() {
+  const el = document.getElementById('log-list');
+  if (!logs.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:2rem">No activity yet</div>'; return; }
+  el.innerHTML = logs.map(l => `<div class="log-entry"><div class="log-time">${l.time}</div><div class="log-${l.type}">${l.msg}</div></div>`).join('');
+}
+
+let demoSetTemp = 24, demoPower = true, demoMode = 2;
+function getDemoData() {
+  return { data: { last_data: { DA: {
+    amOn: demoPower, mode: demoMode, tempTarget: demoSetTemp, fanSpeed: 0,
+    enabledZones: [1, 0, 1, 0, 0, 1, 0, 0]
+  }}}};
+}
+function applyDemoCommand(cmd) {
+  if (cmd.amOn      != null) demoPower   = cmd.amOn;
+  if (cmd.tempTarget != null) demoSetTemp = cmd.tempTarget;
+  if (cmd.mode      != null) demoMode    = cmd.mode;
+}
+
+async function actronGet() {
+  if (state.isDemo) return getDemoData();
+  const url = `${ACTRON_API}/${state.auth.deviceId}?user_access_token=${state.auth.token}`;
+  const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  return resp.json();
+}
+async function actronCommand(cmd) {
+  if (state.isDemo) { applyDemoCommand(cmd); return; }
+  await fetch(`${ACTRON_API}/${state.auth.deviceId}?user_access_token=${state.auth.token}`, {
+    method: 'PUT',
+    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'Origin': 'https://actronair.com.au' },
+    body: JSON.stringify({ DA: cmd })
+  });
+}
+
+async function poll() {
+  setConnStatus('connecting');
+  try {
+    const data = await actronGet();
+    const da = data?.data?.last_data?.DA || data.DA || data;
+    state.powerOn     = da.amOn === true;
+    state.currentMode = MODE_MAP[da.mode] ?? state.currentMode;
+    state.setTemp     = (da.tempTarget != null) ? da.tempTarget : state.setTemp;
+    state.roomTemp    = null;
+    state.outsideTemp = null;
+    if (Array.isArray(da.enabledZones)) {
+      state.zones = da.enabledZones.map((on, i) => ({ name: 'Zone ' + (i+1), amOn: on === 1 }));
+    } else {
+      state.zones = da.zones ?? [];
+    }
+    setConnStatus('online');
+    updateControlUI();
+    checkGuardian(state.setTemp);
+    renderZoneNameInputs();
+    addLog(`Poll — set temp ${state.setTemp}°C, ${state.powerOn ? 'ON' : 'OFF'}, mode ${state.currentMode}`, 'ok');
+    document.getElementById('last-poll-time').textContent = new Date().toLocaleTimeString('en-AU');
+  } catch(err) {
+    setConnStatus('error');
+    console.error('Poll error:', err);
+    addLog(`Poll failed: ${err.message || JSON.stringify(err)}`, 'alert');
+  }
+}
+
+function setConnStatus(s) {
+  document.getElementById('conn-dot').className = 'status-dot' + (s === 'online' ? ' online' : s === 'error' ? ' error' : '');
+  document.getElementById('conn-label-text').textContent = s === 'online' ? 'Online' : s === 'error' ? 'Error' : 'Polling…';
+}
+
+function startPolling() {
+  clearInterval(state.pollTimer);
+  poll();
+  state.pollTimer = setInterval(poll, state.pollInterval * 60 * 1000);
+}
+
+window.renderZoneNameInputs = function() {
+  const container = document.getElementById('zone-name-inputs');
+  if (!container) return;
+  if (!state.zones.length) {
+    container.innerHTML = '<div style="font-size:13px;color:var(--muted)">Poll the unit first to see zones.</div>';
+    return;
+  }
+  container.innerHTML = state.zones.map((z, i) => `
+    <div class="setting-row" style="padding:8px 0${i === state.zones.length-1 ? ';border-bottom:none' : ''}">
+      <div class="setting-label" style="color:var(--muted);font-size:13px">Zone ${i+1}</div>
+      <input class="setting-input"
+        id="zname-${i}"
+        type="text"
+        placeholder="Zone ${i+1}"
+        value="${state.zoneNames[i] || ''}"
+        style="width:160px;text-align:left;font-size:13px"
+        oninput="updateZoneName(${i}, this.value)">
+    </div>`).join('');
+}
+
+window.updateZoneName = function(idx, name) {
+  state.zoneNames[idx] = name.trim();
+  saveSettings();
+  updateControlUI();
+}
+
+function updateControlUI() {
+  const pb = document.getElementById('power-btn');
+  pb.className = 'power-btn' + (state.powerOn ? ' on' : '');
+  document.getElementById('power-label').textContent = state.powerOn ? 'On' : 'Off';
+  document.querySelectorAll('.mode-pill').forEach(p => {
+    p.className = 'mode-pill' + (p.dataset.mode === state.currentMode ? ` active-${state.currentMode}` : '');
+  });
+  const rt = document.getElementById('disp-room');
+  rt.textContent = state.roomTemp != null ? state.roomTemp.toFixed(1) : '--';
+  rt.className = 'temp-value ' + (state.currentMode === 'heat' ? 'heat-color' : 'cool-color');
+  document.getElementById('disp-outside').textContent = state.outsideTemp != null ? state.outsideTemp.toFixed(1) : '--';
+  document.getElementById('disp-set-temp').textContent = state.setTemp;
+  const zl = document.getElementById('zone-list');
+  if (!state.zones.length) { zl.innerHTML = '<div style="color:var(--muted);font-size:13px">No zones detected</div>'; return; }
+  zl.innerHTML = state.zones.map((z, i) =>
+    `<div class="zone-item"><div><div class="zone-name">${state.zoneNames[i] || z.name || 'Zone '+(i+1)}</div></div><div class="toggle ${z.amOn ? 'on' : ''}" onclick="toggleZone(${i})"></div></div>`
+  ).join('');
+}
+
+function buildPayload(overrides) {
+  return { amOn: state.powerOn, tempTarget: state.setTemp, fanSpeed: 0, mode: MODE_MAP[state.currentMode] || 2, ...overrides };
+}
+async function togglePower() {
+  state.powerOn = !state.powerOn;
+  updateControlUI();
+  addLog(`Power → ${state.powerOn ? 'ON' : 'OFF'}`, 'info');
+  await actronCommand(buildPayload({ amOn: state.powerOn }));
+}
+async function setMode(mode) {
+  state.currentMode = mode;
+  updateControlUI();
+  addLog(`Mode → ${mode}`, 'info');
+  await actronCommand(buildPayload({ mode: MODE_MAP[mode] }));
+}
+async function adjustTemp(delta) {
+  const nt = Math.min(30, Math.max(16, state.setTemp + delta));
+  state.setTemp = nt;
+  updateControlUI();
+  addLog(`Set temp → ${nt}°C`, 'info');
+  await actronCommand(buildPayload({ tempTarget: nt }));
+}
+window.toggleZone = async function(idx) {
+  if (!state.zones[idx]) return;
+  state.zones[idx].amOn = !state.zones[idx].amOn;
+  updateControlUI();
+  const cmd = {};
+  state.zones.forEach((z, i) => { cmd[`zone${i+1}amOn`] = z.amOn; });
+  await actronCommand(buildPayload(cmd));
+  addLog(`Zone "${state.zoneNames[idx] || state.zones[idx].name}" → ${state.zones[idx].amOn ? 'ON' : 'OFF'}`, 'info');
+}
+
+function checkGuardian(currentSetTemp) {
+  if (!state.guardianEnabled || currentSetTemp == null) return;
+  const threshold = parseInt(document.getElementById('g-threshold').value) || state.guardianThreshold;
+  if (currentSetTemp < threshold) {
+    if (state.guardianState === 'idle') {
+      state.guardianState = 'countdown';
+      state.overrideDetectedTemp = currentSetTemp;
+      startCountdown();
+      addLog(`⚠️ Override detected — set temp is ${currentSetTemp}°C (threshold: ${threshold}°C). Grace period started.`, 'warn');
+    }
+  } else {
+    if (state.guardianState === 'countdown') {
+      cancelCountdown();
+      addLog(`✓ Override corrected — set temp back to ${currentSetTemp}°C. Guardian reset.`, 'ok');
+    } else if (state.guardianState === 'acted') {
+      state.guardianState = 'idle';
+      addLog('Guardian resumed monitoring.', 'info');
+    }
+  }
+  updateGuardianUI();
+}
+
+function startCountdown() {
+  const graceMs = (parseInt(document.getElementById('g-grace').value) || state.gracePeriodMin) * 60 * 1000;
+  state.countdownEnd = Date.now() + graceMs;
+  document.getElementById('countdown-wrap').classList.add('visible');
+  document.getElementById('override-val').textContent = state.overrideDetectedTemp;
+  clearInterval(state.countdownTimer);
+  state.countdownTimer = setInterval(() => {
+    const rem = state.countdownEnd - Date.now();
+    if (rem <= 0) {
+      clearInterval(state.countdownTimer);
+      executeGuardianAction();
+    } else {
+      const m = Math.floor(rem / 60000), s = Math.floor((rem % 60000) / 1000);
+      document.getElementById('countdown-num').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+  }, 1000);
+}
+
+function cancelCountdown() {
+  clearInterval(state.countdownTimer);
+  state.guardianState = 'idle';
+  state.countdownEnd = null;
+  document.getElementById('countdown-wrap').classList.remove('visible');
+  document.getElementById('countdown-num').textContent = '--:--';
+  updateGuardianUI();
+}
+
+async function executeGuardianAction() {
+  state.guardianState = 'acted';
+  document.getElementById('countdown-wrap').classList.remove('visible');
+  addLog('🚨 Grace period expired. Turning A/C off and sending alert email.', 'alert');
+  try {
+    await actronCommand(buildPayload({ amOn: false }));
+    state.powerOn = false;
+    updateControlUI();
+    addLog('A/C turned OFF by Guardian.', 'alert');
+  } catch(e) {
+    addLog(`Failed to turn A/C off: ${e.message}`, 'alert');
+  }
+  await sendGuardianEmail('turned_off');
+  updateGuardianUI();
+}
+
+async function sendGuardianEmail(action) {
+  const svc  = document.getElementById('ejs-service').value.trim();
+  const tmpl = document.getElementById('ejs-template').value.trim();
+  const key  = document.getElementById('ejs-pubkey').value.trim();
+  if (!svc || !tmpl || !key) {
+    addLog('Email not sent — EmailJS not configured in Guardian tab.', 'warn');
+    return;
+  }
+  try {
+    emailjs.init(key);
+    await emailjs.send(svc, tmpl, {
+      to_email:      ALERT_EMAIL,
+      override_temp: state.overrideDetectedTemp,
+      room_temp:     state.roomTemp?.toFixed(1) || 'unknown',
+      threshold:     state.guardianThreshold,
+      action:        action === 'turned_off' ? 'A/C has been turned off by Guardian.' : 'Test alert.',
+      time:          new Date().toLocaleString('en-AU'),
+    });
+    addLog(`Alert email sent to ${ALERT_EMAIL}`, 'ok');
+  } catch(e) {
+    addLog(`Email failed: ${JSON.stringify(e)}`, 'alert');
+  }
+}
+
+function updateGuardianUI() {
+  const badge  = document.getElementById('guardian-badge');
+  const status = document.getElementById('guardian-status-text');
+  const card   = document.getElementById('guardian-card');
+  const tog    = document.getElementById('guardian-toggle');
+  tog.className = 'toggle' + (state.guardianEnabled ? ' on' : '');
+  if (!state.guardianEnabled) {
+    badge.className = 'badge badge-off'; badge.textContent = 'Off';
+    card.className = 'guardian-card';
+    status.style.color = 'var(--muted)';
+    status.textContent = 'Guardian is off. Enable the toggle above to start monitoring.';
+  } else if (state.guardianState === 'countdown') {
+    badge.className = 'badge badge-alert'; badge.textContent = 'Alert';
+    card.className = 'guardian-card armed';
+    status.style.color = 'var(--warn)';
+    status.textContent = `Override detected (${state.overrideDetectedTemp}°C). Counting down grace period…`;
+  } else if (state.guardianState === 'acted') {
+    badge.className = 'badge badge-alert'; badge.textContent = 'Acted';
+    card.className = 'guardian-card triggered';
+    status.style.color = 'var(--danger)';
+    status.textContent = 'A/C was turned off by Guardian. Monitoring — will act again if repeated.';
+  } else {
+    badge.className = 'badge badge-on'; badge.textContent = 'Watching';
+    card.className = 'guardian-card';
+    status.style.color = 'var(--success)';
+    status.textContent = `Monitoring every ${state.pollInterval} min. Threshold: ${state.guardianThreshold}°C. Grace period: ${state.gracePeriodMin} min.`;
+  }
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(t => { t.style.display = 'none'; });
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const tab = document.getElementById(`tab-${name}`);
+  if (tab) { tab.style.display = 'flex'; tab.style.flexDirection = 'column'; }
+  document.querySelector(`.nav-btn[data-tab="${name}"]`)?.classList.add('active');
+}
+
+function showApp(auth, isDemo) {
+  state.auth = auth; state.isDemo = isDemo;
+  document.getElementById('login-screen').classList.remove('active');
+  document.getElementById('app-screen').classList.add('active');
+  document.getElementById('s-user-display').textContent = auth?.deviceId || 'Demo';
+  document.getElementById('s-key-display').textContent = auth?.token ? '••••' + auth.token.slice(-4) : 'Demo';
+  loadSettings();
+  showTab('control');
+  startPolling();
+  if ('wakeLock' in navigator) {
+    navigator.wakeLock.request('screen').then(() => {
+      document.getElementById('wake-warning').style.display = 'none';
+    }).catch(() => {});
+  }
+}
+
+function showLogin() {
+  document.getElementById('app-screen').classList.remove('active');
+  document.getElementById('login-screen').classList.add('active');
+  clearInterval(state.pollTimer);
+  cancelCountdown();
+  state.guardianEnabled = false;
+}
+
+document.getElementById('btn-login').addEventListener('click', () => {
+  const deviceId = document.getElementById('inp-user').value.trim();
+  const token    = document.getElementById('inp-key').value.trim();
+  const err      = document.getElementById('login-error');
+  if (!deviceId || !token) { err.textContent = 'Device ID and token are required.'; return; }
+  err.textContent = '';
+  const auth = { deviceId, token };
+  localStorage.setItem('actron-auth', JSON.stringify(auth));
+  showApp(auth, false);
+});
+document.getElementById('btn-demo').addEventListener('click', () => showApp({ deviceId: 'DEMO', token: 'DEMO' }, true));
+document.getElementById('power-btn').addEventListener('click', togglePower);
+document.querySelectorAll('.mode-pill').forEach(p => p.addEventListener('click', () => setMode(p.dataset.mode)));
+document.getElementById('btn-temp-up').addEventListener('click',   () => adjustTemp(+1));
+document.getElementById('btn-temp-down').addEventListener('click', () => adjustTemp(-1));
+document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+document.getElementById('guardian-toggle').addEventListener('click', () => {
+  state.guardianEnabled = !state.guardianEnabled;
+  if (!state.guardianEnabled) { cancelCountdown(); state.guardianState = 'idle'; }
+  saveSettings(); updateGuardianUI();
+  addLog(`Guardian ${state.guardianEnabled ? 'enabled' : 'disabled'}`, 'info');
+});
+document.getElementById('btn-cancel-countdown').addEventListener('click', () => { cancelCountdown(); addLog('Countdown cancelled manually.', 'info'); });
+document.getElementById('g-threshold').addEventListener('change', () => { state.guardianThreshold = parseInt(document.getElementById('g-threshold').value); saveSettings(); updateGuardianUI(); });
+document.getElementById('g-grace').addEventListener('change',    () => { state.gracePeriodMin    = parseInt(document.getElementById('g-grace').value);     saveSettings(); updateGuardianUI(); });
+document.getElementById('s-poll').addEventListener('change', () => {
+  state.pollInterval = parseInt(document.getElementById('s-poll').value) || 15;
+  saveSettings(); startPolling();
+  addLog(`Poll interval → ${state.pollInterval} min`, 'info');
+});
+document.getElementById('btn-poll-now').addEventListener('click', poll);
+document.getElementById('btn-logout').addEventListener('click', () => { localStorage.removeItem('actron-auth'); showLogin(); });
+document.getElementById('btn-clear-log').addEventListener('click', () => { logs = []; renderLog(); });
+document.getElementById('btn-test-email').addEventListener('click', async () => {
+  const res = document.getElementById('email-test-result');
+  res.textContent = 'Sending…'; res.style.color = 'var(--muted)';
+  state.overrideDetectedTemp = 18; state.roomTemp = state.roomTemp || 23;
+  await sendGuardianEmail('test');
+  res.textContent = 'Check your inbox'; res.style.color = 'var(--success)';
+  setTimeout(() => { res.textContent = ''; }, 5000);
+});
+['ejs-service','ejs-template','ejs-pubkey'].forEach(id => document.getElementById(id).addEventListener('change', saveSettings));
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+const savedAuth = (() => { try { return JSON.parse(localStorage.getItem('actron-auth') || 'null'); } catch(e) { return null; } })();
+if (savedAuth?.token) showApp(savedAuth, false);
+</script>
+</body>
+</html>
