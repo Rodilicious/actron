@@ -1,0 +1,208 @@
+name: Actron Temperature Guardian
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'  # Every 15 minutes
+  workflow_dispatch:          # Allow manual trigger from GitHub Actions tab
+
+jobs:
+  guardian:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Run Guardian
+        uses: actions/github-script@v7
+        env:
+          ACTRON_DEVICE_ID:   ${{ secrets.ACTRON_DEVICE_ID }}
+          ACTRON_TOKEN:       ${{ secrets.ACTRON_TOKEN }}
+          GUARDIAN_THRESHOLD: ${{ secrets.GUARDIAN_THRESHOLD }}
+          GUARDIAN_GRACE_MIN: ${{ secrets.GUARDIAN_GRACE_MIN }}
+          ALERT_EMAIL:        ${{ secrets.ALERT_EMAIL }}
+          EMAILJS_SERVICE:    ${{ secrets.EMAILJS_SERVICE }}
+          EMAILJS_TEMPLATE:   ${{ secrets.EMAILJS_TEMPLATE }}
+          EMAILJS_PUBKEY:     ${{ secrets.EMAILJS_PUBKEY }}
+          JSONBIN_BIN_ID:     ${{ secrets.JSONBIN_BIN_ID }}
+          JSONBIN_API_KEY:    ${{ secrets.JSONBIN_API_KEY }}
+          TUYA_CLIENT_ID:     ${{ secrets.TUYA_CLIENT_ID }}
+          TUYA_SECRET:        ${{ secrets.TUYA_SECRET }}
+          TUYA_DEVICE_ID:     ${{ secrets.TUYA_DEVICE_ID }}
+        with:
+          script: |
+            const crypto = require('crypto');
+
+            const DEVICE_ID    = process.env.ACTRON_DEVICE_ID;
+            const TOKEN        = process.env.ACTRON_TOKEN;
+            const THRESHOLD    = parseFloat(process.env.GUARDIAN_THRESHOLD || '22');
+            const GRACE_MS     = parseFloat(process.env.GUARDIAN_GRACE_MIN || '20') * 60 * 1000;
+            const ALERT_EMAIL  = process.env.ALERT_EMAIL;
+            const EJS_SERVICE  = process.env.EMAILJS_SERVICE;
+            const EJS_TEMPLATE = process.env.EMAILJS_TEMPLATE;
+            const EJS_PUBKEY   = process.env.EMAILJS_PUBKEY;
+            const BIN_ID       = process.env.JSONBIN_BIN_ID;
+            const BIN_KEY      = process.env.JSONBIN_API_KEY;
+            const TUYA_CLIENT  = process.env.TUYA_CLIENT_ID;
+            const TUYA_SECRET  = process.env.TUYA_SECRET;
+            const TUYA_DEVICE  = process.env.TUYA_DEVICE_ID;
+
+            const ACTRON_URL  = `https://que.actronair.com.au/rest/v0/device/${DEVICE_ID}?user_access_token=${TOKEN}`;
+            const TUYA_BASE   = 'https://openapi.tuyaeu.com';
+            const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+            const JSONBIN_HDR = { 'Content-Type': 'application/json', 'X-Access-Key': BIN_KEY };
+
+            // ── JSONBIN ──
+            async function loadBin() {
+              const resp = await fetch(JSONBIN_URL + '/latest', { headers: { 'X-Access-Key': BIN_KEY } });
+              if (!resp.ok) throw new Error(`JSONBin read HTTP ${resp.status}`);
+              const data = await resp.json();
+              return data.record || {};
+            }
+            async function saveBin(record) {
+              const resp = await fetch(JSONBIN_URL, {
+                method: 'PUT', headers: JSONBIN_HDR, body: JSON.stringify(record)
+              });
+              if (!resp.ok) throw new Error(`JSONBin write HTTP ${resp.status}`);
+            }
+
+            // ── ACTRON ──
+            async function getActronStatus() {
+              const resp = await fetch(ACTRON_URL, { headers: { Accept: 'application/json' } });
+              if (!resp.ok) throw new Error(`Actron HTTP ${resp.status}`);
+              const data = await resp.json();
+              const da = data?.data?.last_data?.DA;
+              if (!da) throw new Error('Unexpected Actron response');
+              return da;
+            }
+            async function sendActronCommand(cmd) {
+              const cur = await getActronStatus();
+              const payload = { amOn: cur.amOn, tempTarget: cur.tempTarget, fanSpeed: cur.fanSpeed || 0, mode: cur.mode || 2, ...cmd };
+              const resp = await fetch(ACTRON_URL, {
+                method: 'PUT',
+                headers: { Accept: 'application/json', 'Content-Type': 'application/json', Origin: 'https://actronair.com.au' },
+                body: JSON.stringify({ DA: payload })
+              });
+              if (!resp.ok) throw new Error(`Actron command HTTP ${resp.status}`);
+            }
+
+            // ── TUYA ──
+            function tuyaSign(method, path, accessToken) {
+              const t = Date.now().toString();
+              const emptyHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+              const stringToSign = [method, emptyHash, '', path].join('\n');
+              const str = accessToken
+                ? TUYA_CLIENT + accessToken + t + stringToSign
+                : TUYA_CLIENT + t + stringToSign;
+              const sign = crypto.createHmac('sha256', TUYA_SECRET).update(str).digest('hex').toUpperCase();
+              return { t, sign };
+            }
+            async function tuyaGetToken() {
+              const path = '/v1.0/token?grant_type=1';
+              const { t, sign } = tuyaSign('GET', path, '');
+              const resp = await fetch(TUYA_BASE + path, {
+                headers: { client_id: TUYA_CLIENT, t, sign, sign_method: 'HMAC-SHA256' }
+              });
+              const data = await resp.json();
+              if (!data.success) throw new Error('Tuya token: ' + data.msg);
+              return data.result.access_token;
+            }
+            async function tuyaGetTemperature() {
+              try {
+                const token = await tuyaGetToken();
+                const path = `/v2.0/cloud/thing/${TUYA_DEVICE}/shadow/properties`;
+                const { t, sign } = tuyaSign('GET', path, token);
+                const resp = await fetch(TUYA_BASE + path, {
+                  headers: { client_id: TUYA_CLIENT, access_token: token, t, sign, sign_method: 'HMAC-SHA256' }
+                });
+                const data = await resp.json();
+                if (!data.success) throw new Error('Tuya: ' + JSON.stringify(data));
+                const props = data.result?.properties;
+                if (!props) throw new Error('No properties: ' + JSON.stringify(data.result));
+                const temp = props.find(p => p.code === 'temp_current');
+                const hum  = props.find(p => p.code === 'humidity_value');
+                return {
+                  temp:     temp ? temp.value / 10 : null,
+                  humidity: hum  ? hum.value       : null,
+                  time:     Date.now()
+                };
+              } catch(e) {
+                console.log('Tuya error:', e.message);
+                return { temp: null, humidity: null, time: Date.now(), error: e.message };
+              }
+            }
+
+            // ── EMAIL ──
+            async function sendEmail(overrideTemp, action) {
+              const resp = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  service_id: EJS_SERVICE, template_id: EJS_TEMPLATE, user_id: EJS_PUBKEY,
+                  template_params: {
+                    to_email: ALERT_EMAIL, override_temp: overrideTemp, threshold: THRESHOLD,
+                    room_temp: 'N/A', action: action,
+                    time: new Date().toLocaleString('en-AU', { timeZone: 'Australia/Sydney' })
+                  }
+                })
+              });
+              if (!resp.ok) throw new Error(`EmailJS HTTP ${resp.status}`);
+            }
+
+            // ── MAIN ──
+            const now = Date.now();
+
+            let bin;
+            try { bin = await loadBin(); } catch(e) { bin = {}; console.log('JSONBin load failed:', e.message); }
+            let overrideFirstSeen = bin.overrideFirstSeen || null;
+
+            const [da, tuya] = await Promise.all([
+              getActronStatus().catch(e => { console.log('Actron poll failed:', e.message); return null; }),
+              tuyaGetTemperature()
+            ]);
+
+            if (!da) { console.log('Actron poll failed'); return; }
+
+            const setTemp = da.tempTarget;
+            const powerOn = da.amOn;
+            console.log(`Actron: power=${powerOn}, setTemp=${setTemp}C | Tuya: temp=${tuya.temp}C, humidity=${tuya.humidity}%`);
+
+            let guardianResult;
+            if (!powerOn) {
+              overrideFirstSeen = null;
+              guardianResult = 'AC is off';
+            } else if (setTemp < THRESHOLD) {
+              if (!overrideFirstSeen) {
+                overrideFirstSeen = now;
+                guardianResult = `Override detected: ${setTemp}C. Grace period started.`;
+                console.log(guardianResult);
+              } else {
+                const remaining = GRACE_MS - (now - overrideFirstSeen);
+                if (remaining > 0) {
+                  guardianResult = `Override persists. ${Math.round(remaining/60000)} min remaining.`;
+                  console.log(guardianResult);
+                } else {
+                  let acOff = false, emailSent = false;
+                  try { await sendActronCommand({ amOn: false }); acOff = true; console.log('AC turned off.'); } catch(e) { console.log('AC off failed:', e.message); }
+                  try { await sendEmail(setTemp, acOff ? 'The A/C has been turned off by Guardian.' : 'Guardian tried to turn A/C off but failed.'); emailSent = true; console.log('Alert email sent.'); } catch(e) { console.log('Email failed:', e.message); }
+                  overrideFirstSeen = null;
+                  guardianResult = `Acted: AC off=${acOff}, email=${emailSent}`;
+                }
+              }
+            } else {
+              if (overrideFirstSeen) {
+                overrideFirstSeen = null;
+                guardianResult = `Override corrected: ${setTemp}C`;
+                console.log(guardianResult);
+              } else {
+                guardianResult = `OK: ${setTemp}C is fine`;
+              }
+            }
+
+            try {
+              await saveBin({
+                overrideFirstSeen,
+                sensor: { temp: tuya.temp, humidity: tuya.humidity, updatedAt: now }
+              });
+              console.log('JSONBin updated.');
+            } catch(e) { console.log('JSONBin save failed:', e.message); }
+
+            console.log('Guardian result:', guardianResult);
