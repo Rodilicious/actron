@@ -207,11 +207,11 @@ body {
       <div class="temp-row">
         <div class="temp-card">
           <div class="temp-value cool-color" id="disp-room">--</div>
-          <div class="temp-label">Room temp</div><div style="font-size:10px;color:var(--muted);margin-top:2px">not available</div>
+          <div class="temp-label">Room temp</div>
         </div>
         <div class="temp-card">
           <div class="temp-value" id="disp-outside" style="color:var(--muted)">--</div>
-          <div class="temp-label">Outside</div><div style="font-size:10px;color:var(--muted);margin-top:2px">not available</div>
+          <div class="temp-label">Humidity</div>
         </div>
       </div>
       <div class="card">
@@ -396,12 +396,9 @@ body {
 const ALERT_EMAIL = 'rod.crowder@opscentre.com';
 const ACTRON_API  = 'https://que.actronair.com.au/rest/v0/device';
 const MODE_MAP = { 2:'cool', 3:'heat', 4:'fan', 1:'auto', cool:2, heat:3, fan:4, auto:1 };
+const JSONBIN_BIN_ID = '69b62255b7ec241ddc6c9152';
+const JSONBIN_KEY    = '$2a$10$GCz45pcvt.RNJavm03JyjOJDsYLhyB1ABsgeTWK7s21epV2Te.9hW';
 
-// ── TUYA CONFIG ──
-const TUYA_CLIENT_ID  = 'u9g99qjawvnunfdvj3wp';
-const TUYA_SECRET     = '1a3337b04e1f4c1b86a0786ba5a05051';
-const TUYA_DEVICE_ID  = 'bff5c3d5fe25f1ff6aw8c6';
-const TUYA_BASE_URL   = 'https://openapi.tuyaeu.com';
 
 window.state = {
   auth: null, isDemo: false,
@@ -488,7 +485,7 @@ async function actronCommand(cmd) {
 }
 
 // ── TUYA API ──
-async function tuyaSign(method, path, accessToken, body) {
+window.tuyaSign = async function(method, path, accessToken, body) {
   const t = Date.now().toString();
   const contentHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(body || ''))
     .then(b => Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2,'0')).join(''));
@@ -503,7 +500,7 @@ async function tuyaSign(method, path, accessToken, body) {
   return { t, sign };
 }
 
-async function tuyaGetToken() {
+window.tuyaGetToken = async function() {
   const path = '/v1.0/token?grant_type=1';
   const { t, sign } = await tuyaSign('GET', path, '');
   const resp = await fetch(TUYA_BASE_URL + path, {
@@ -514,7 +511,7 @@ async function tuyaGetToken() {
   return data.result.access_token;
 }
 
-async function tuyaGetTemperature() {
+window.tuyaGetTemperature = async function() {
   if (state.isDemo) return { temp: 23.5, humidity: 58 };
   try {
     const token = await tuyaGetToken();
@@ -538,6 +535,22 @@ async function tuyaGetTemperature() {
   }
 }
 
+// ── SENSOR: read from JSONBin (written by Pipedream) ──
+window.getSensorReadings = async function() {
+  if (window.state.isDemo) return { temp: 23.5, humidity: 58 };
+  try {
+    const resp = await fetch('https://api.jsonbin.io/v3/b/69b62255b7ec241ddc6c9152/latest', {
+      headers: { 'X-Access-Key': '$2a$10$GCz45pcvt.RNJavm03JyjOJDsYLhyB1ABsgeTWK7s21epV2Te.9hW' }
+    });
+    if (!resp.ok) throw new Error('JSONBin HTTP ' + resp.status);
+    const data = await resp.json();
+    return data.record?.sensor || { temp: null, humidity: null };
+  } catch(e) {
+    console.error('Sensor read error:', e.message);
+    return { temp: null, humidity: null };
+  }
+}
+
 // ── POLL ──
 async function poll() {
   setConnStatus('connecting');
@@ -549,7 +562,7 @@ async function poll() {
     state.currentMode = MODE_MAP[da.mode] ?? state.currentMode;
     state.setTemp     = (da.tempTarget != null) ? da.tempTarget : state.setTemp;
     // Fetch room temp from Tuya sensor
-    const tuya = await tuyaGetTemperature();
+    const tuya = await getSensorReadings();
     state.roomTemp    = tuya.temp;
     state.humidity    = tuya.humidity;
     state.outsideTemp = null;
@@ -661,7 +674,7 @@ async function adjustTemp(delta) {
   addLog(`Set temp → ${nt}°C`, 'info');
   await actronCommand(buildPayload({ tempTarget: nt }));
 }
-async window.toggleZone = function(idx) {
+window.toggleZone = async function(idx) {
   if (!state.zones[idx]) return;
   state.zones[idx].amOn = !state.zones[idx].amOn;
   updateControlUI();
