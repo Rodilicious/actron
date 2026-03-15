@@ -168,7 +168,9 @@ body {
     <button class="btn btn-primary" id="btn-login">Connect</button>
     <button class="btn btn-secondary" id="btn-demo" style="margin-top:4px">Try Demo Mode</button>
   </div>
-
+  <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:0.5rem;line-height:1.6">
+    In Chrome: go to actronair.com.au/aconnect → right-click → Inspect → Network tab → turn A/C on → right-click the PUT request → Copy as cURL. Your device ID and token are in that URL.
+  </p>
 </div>
 
 <!-- APP SCREEN -->
@@ -205,13 +207,11 @@ body {
       <div class="temp-row">
         <div class="temp-card">
           <div class="temp-value cool-color" id="disp-room">--</div>
-          <div class="temp-label">Room temp</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:2px">not available</div>
+          <div class="temp-label">Room temp</div><div style="font-size:10px;color:var(--muted);margin-top:2px">not available</div>
         </div>
         <div class="temp-card">
           <div class="temp-value" id="disp-outside" style="color:var(--muted)">--</div>
-          <div class="temp-label">Outside</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:2px">not available</div>
+          <div class="temp-label">Outside</div><div style="font-size:10px;color:var(--muted);margin-top:2px">not available</div>
         </div>
       </div>
       <div class="card">
@@ -267,6 +267,7 @@ body {
         </div>
       </div>
 
+      <!-- Countdown -->
       <div class="countdown-wrap" id="countdown-wrap">
         <div class="override-info" id="override-info">Set temp overridden to <strong id="override-val">--</strong>°C</div>
         <div class="countdown-num" id="countdown-num">--:--</div>
@@ -274,6 +275,7 @@ body {
         <button class="btn btn-secondary" id="btn-cancel-countdown" style="margin-top:12px;width:auto;padding:8px 20px;font-size:13px">Cancel — temp was corrected</button>
       </div>
 
+      <!-- EmailJS config -->
       <div class="card" style="margin-top:0.75rem">
         <div class="card-label">Alert Email — EmailJS Setup</div>
         <div class="setting-row" style="padding:8px 0">
@@ -344,17 +346,18 @@ body {
           <div style="font-size:12px;color:var(--muted)" id="s-key-display">••••</div>
         </div>
       </div>
+      <div class="card">
+        <div class="card-label">Actions</div>
+        <button class="btn btn-secondary" id="btn-poll-now" style="margin-bottom:8px">Poll Now</button>
+        <button class="btn btn-danger" id="btn-logout">Sign Out</button>
+      </div>
       <div class="card" id="zone-names-card">
         <div class="card-label">Zone Names</div>
         <div id="zone-name-inputs">
           <div style="font-size:13px;color:var(--muted)">Poll the unit first to see zones.</div>
         </div>
       </div>
-      <div class="card">
-        <div class="card-label">Actions</div>
-        <button class="btn btn-secondary" id="btn-poll-now" style="margin-bottom:8px">Poll Now</button>
-        <button class="btn btn-danger" id="btn-logout">Sign Out</button>
-      </div>
+
       <div class="card">
         <div class="card-label">About</div>
         <div style="font-size:13px;color:var(--muted);line-height:1.7">
@@ -394,26 +397,33 @@ const ALERT_EMAIL = 'rod.crowder@opscentre.com';
 const ACTRON_API  = 'https://que.actronair.com.au/rest/v0/device';
 const MODE_MAP = { 2:'cool', 3:'heat', 4:'fan', 1:'auto', cool:2, heat:3, fan:4, auto:1 };
 
+// ── TUYA CONFIG ──
+const TUYA_CLIENT_ID  = 'u9g99qjawvnunfdvj3wp';
+const TUYA_SECRET     = '1a3337b04e1f4c1b86a0786ba5a05051';
+const TUYA_DEVICE_ID  = 'bff5c3d5fe25f1ff6aw8c6';
+const TUYA_BASE_URL   = 'https://openapi.tuyaeu.com';
+
 window.state = {
   auth: null, isDemo: false,
   powerOn: false, currentMode: 'cool', setTemp: 22,
-  roomTemp: null, outsideTemp: null, zones: [],
+  roomTemp: null, outsideTemp: null, humidity: null, zones: [],
   pollInterval: 15, pollTimer: null,
-  zoneNames: {},
+  zoneNames: {},  // { 0: 'Study', 1: 'Bedroom', ... }
   guardianEnabled: false, guardianThreshold: 22, gracePeriodMin: 10,
   guardianState: 'idle',
   countdownTimer: null, countdownEnd: null, overrideDetectedTemp: null,
 };
 
+// ── PERSISTENCE ──
 function saveSettings() {
   localStorage.setItem('actron-settings', JSON.stringify({
     pollInterval: state.pollInterval,
     guardianThreshold: state.guardianThreshold,
     gracePeriodMin: state.gracePeriodMin,
-    zoneNames: state.zoneNames,
     ejsService:  document.getElementById('ejs-service').value,
     ejsTemplate: document.getElementById('ejs-template').value,
     ejsPubkey:   document.getElementById('ejs-pubkey').value,
+    zoneNames:   state.zoneNames,
   }));
 }
 
@@ -430,6 +440,7 @@ function loadSettings() {
   } catch(e) {}
 }
 
+// ── LOGGING ──
 let logs = [];
 function addLog(msg, type = 'info') {
   const time = new Date().toLocaleTimeString('en-AU', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
@@ -443,6 +454,7 @@ function renderLog() {
   el.innerHTML = logs.map(l => `<div class="log-entry"><div class="log-time">${l.time}</div><div class="log-${l.type}">${l.msg}</div></div>`).join('');
 }
 
+// ── DEMO DATA ──
 let demoSetTemp = 24, demoPower = true, demoMode = 2;
 function getDemoData() {
   return { data: { last_data: { DA: {
@@ -451,15 +463,18 @@ function getDemoData() {
   }}}};
 }
 function applyDemoCommand(cmd) {
-  if (cmd.amOn      != null) demoPower   = cmd.amOn;
+  if (cmd.amOn     != null) demoPower   = cmd.amOn;
   if (cmd.tempTarget != null) demoSetTemp = cmd.tempTarget;
-  if (cmd.mode      != null) demoMode    = cmd.mode;
+  if (cmd.mode     != null) demoMode    = cmd.mode;
 }
 
+// ── ACTRON API ──
 async function actronGet() {
   if (state.isDemo) return getDemoData();
   const url = `${ACTRON_API}/${state.auth.deviceId}?user_access_token=${state.auth.token}`;
-  const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+  const resp = await fetch(url, {
+    headers: { 'Accept': 'application/json' }
+  });
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
   return resp.json();
 }
@@ -472,16 +487,73 @@ async function actronCommand(cmd) {
   });
 }
 
+// ── TUYA API ──
+async function tuyaSign(method, path, accessToken, body) {
+  const t = Date.now().toString();
+  const contentHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(body || ''))
+    .then(b => Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2,'0')).join(''));
+  const stringToSign = [method, contentHash, '', path].join('\n');
+  const str = accessToken
+    ? TUYA_CLIENT_ID + accessToken + t + stringToSign
+    : TUYA_CLIENT_ID + t + stringToSign;
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(TUYA_SECRET),
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(str));
+  const sign = Array.from(new Uint8Array(sig)).map(x => x.toString(16).padStart(2,'0')).join('').toUpperCase();
+  return { t, sign };
+}
+
+async function tuyaGetToken() {
+  const path = '/v1.0/token?grant_type=1';
+  const { t, sign } = await tuyaSign('GET', path, '');
+  const resp = await fetch(TUYA_BASE_URL + path, {
+    headers: { 'client_id': TUYA_CLIENT_ID, 't': t, 'sign': sign, 'sign_method': 'HMAC-SHA256' }
+  });
+  const data = await resp.json();
+  if (!data.success) throw new Error('Tuya token failed: ' + data.msg);
+  return data.result.access_token;
+}
+
+async function tuyaGetTemperature() {
+  if (state.isDemo) return { temp: 23.5, humidity: 58 };
+  try {
+    const token = await tuyaGetToken();
+    const path = `/v1.0/iot-03/devices/${TUYA_DEVICE_ID}/properties`;
+    const { t, sign } = await tuyaSign('GET', path, token);
+    const resp = await fetch(TUYA_BASE_URL + path, {
+      headers: { 'client_id': TUYA_CLIENT_ID, 'access_token': token, 't': t, 'sign': sign, 'sign_method': 'HMAC-SHA256' }
+    });
+    const data = await resp.json();
+    if (!data.success) throw new Error('Tuya properties failed: ' + data.msg);
+    const props = data.result.properties;
+    const tempProp = props.find(p => p.code === 'temp_current');
+    const humProp  = props.find(p => p.code === 'humidity_value');
+    return {
+      temp:     tempProp ? tempProp.value / 10 : null,
+      humidity: humProp  ? humProp.value       : null
+    };
+  } catch(e) {
+    console.error('Tuya error:', e.message);
+    return { temp: null, humidity: null };
+  }
+}
+
+// ── POLL ──
 async function poll() {
   setConnStatus('connecting');
   try {
     const data = await actronGet();
+    // Real response: data.data.last_data.DA
     const da = data?.data?.last_data?.DA || data.DA || data;
     state.powerOn     = da.amOn === true;
     state.currentMode = MODE_MAP[da.mode] ?? state.currentMode;
     state.setTemp     = (da.tempTarget != null) ? da.tempTarget : state.setTemp;
-    state.roomTemp    = null;
+    // Fetch room temp from Tuya sensor
+    const tuya = await tuyaGetTemperature();
+    state.roomTemp    = tuya.temp;
+    state.humidity    = tuya.humidity;
     state.outsideTemp = null;
+    // Zones are an array of 1/0 values e.g. [1,0,1,0,0,1,0,0]
     if (Array.isArray(da.enabledZones)) {
       state.zones = da.enabledZones.map((on, i) => ({ name: 'Zone ' + (i+1), amOn: on === 1 }));
     } else {
@@ -491,11 +563,12 @@ async function poll() {
     updateControlUI();
     checkGuardian(state.setTemp);
     renderZoneNameInputs();
-    addLog(`Poll — set temp ${state.setTemp}°C, ${state.powerOn ? 'ON' : 'OFF'}, mode ${state.currentMode}`, 'ok');
+    const tempStr = state.roomTemp != null ? `, room ${state.roomTemp.toFixed(1)}°C` : '';
+    addLog(`Poll — set temp ${state.setTemp}°C, ${state.powerOn ? 'ON' : 'OFF'}, mode ${state.currentMode}${tempStr}`, 'ok');
     document.getElementById('last-poll-time').textContent = new Date().toLocaleTimeString('en-AU');
   } catch(err) {
     setConnStatus('error');
-    console.error('Poll error:', err);
+    console.error('Poll error full:', err);
     addLog(`Poll failed: ${err.message || JSON.stringify(err)}`, 'alert');
   }
 }
@@ -511,6 +584,7 @@ function startPolling() {
   state.pollTimer = setInterval(poll, state.pollInterval * 60 * 1000);
 }
 
+// ── ZONE NAME EDITOR ──
 window.renderZoneNameInputs = function() {
   const container = document.getElementById('zone-name-inputs');
   if (!container) return;
@@ -537,6 +611,7 @@ window.updateZoneName = function(idx, name) {
   updateControlUI();
 }
 
+// ── UI UPDATE ──
 function updateControlUI() {
   const pb = document.getElementById('power-btn');
   pb.className = 'power-btn' + (state.powerOn ? ' on' : '');
@@ -547,7 +622,7 @@ function updateControlUI() {
   const rt = document.getElementById('disp-room');
   rt.textContent = state.roomTemp != null ? state.roomTemp.toFixed(1) : '--';
   rt.className = 'temp-value ' + (state.currentMode === 'heat' ? 'heat-color' : 'cool-color');
-  document.getElementById('disp-outside').textContent = state.outsideTemp != null ? state.outsideTemp.toFixed(1) : '--';
+  document.getElementById('disp-outside').textContent = state.humidity != null ? state.humidity + '%' : '--';
   document.getElementById('disp-set-temp').textContent = state.setTemp;
   const zl = document.getElementById('zone-list');
   if (!state.zones.length) { zl.innerHTML = '<div style="color:var(--muted);font-size:13px">No zones detected</div>'; return; }
@@ -556,8 +631,16 @@ function updateControlUI() {
   ).join('');
 }
 
+// ── COMMANDS ──
+// Always send a full command payload matching the real API format
 function buildPayload(overrides) {
-  return { amOn: state.powerOn, tempTarget: state.setTemp, fanSpeed: 0, mode: MODE_MAP[state.currentMode] || 2, ...overrides };
+  return {
+    amOn:        state.powerOn,
+    tempTarget:  state.setTemp,
+    fanSpeed:    0,
+    mode:        MODE_MAP[state.currentMode] || 2,
+    ...overrides
+  };
 }
 async function togglePower() {
   state.powerOn = !state.powerOn;
@@ -578,16 +661,17 @@ async function adjustTemp(delta) {
   addLog(`Set temp → ${nt}°C`, 'info');
   await actronCommand(buildPayload({ tempTarget: nt }));
 }
-window.toggleZone = async function(idx) {
+async window.toggleZone = function(idx) {
   if (!state.zones[idx]) return;
   state.zones[idx].amOn = !state.zones[idx].amOn;
   updateControlUI();
   const cmd = {};
   state.zones.forEach((z, i) => { cmd[`zone${i+1}amOn`] = z.amOn; });
-  await actronCommand(buildPayload(cmd));
-  addLog(`Zone "${state.zoneNames[idx] || state.zones[idx].name}" → ${state.zones[idx].amOn ? 'ON' : 'OFF'}`, 'info');
+  await actronCommand(cmd);
+  addLog(`Zone "${state.zones[idx].name}" → ${state.zones[idx].amOn ? 'ON' : 'OFF'}`, 'info');
 }
 
+// ── GUARDIAN ──
 function checkGuardian(currentSetTemp) {
   if (!state.guardianEnabled || currentSetTemp == null) return;
   const threshold = parseInt(document.getElementById('g-threshold').value) || state.guardianThreshold;
@@ -706,14 +790,17 @@ function updateGuardianUI() {
   }
 }
 
+// ── NAV ──
 function showTab(name) {
   document.querySelectorAll('.tab-content').forEach(t => { t.style.display = 'none'; });
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   const tab = document.getElementById(`tab-${name}`);
   if (tab) { tab.style.display = 'flex'; tab.style.flexDirection = 'column'; }
   document.querySelector(`.nav-btn[data-tab="${name}"]`)?.classList.add('active');
+  if (name === 'settings') renderZoneNameInputs();
 }
 
+// ── APP LIFECYCLE ──
 function showApp(auth, isDemo) {
   state.auth = auth; state.isDemo = isDemo;
   document.getElementById('login-screen').classList.remove('active');
@@ -738,10 +825,11 @@ function showLogin() {
   state.guardianEnabled = false;
 }
 
+// ── EVENTS ──
 document.getElementById('btn-login').addEventListener('click', () => {
   const deviceId = document.getElementById('inp-user').value.trim();
-  const token    = document.getElementById('inp-key').value.trim();
-  const err      = document.getElementById('login-error');
+  const token   = document.getElementById('inp-key').value.trim();
+  const err  = document.getElementById('login-error');
   if (!deviceId || !token) { err.textContent = 'Device ID and token are required.'; return; }
   err.textContent = '';
   const auth = { deviceId, token };
@@ -781,6 +869,7 @@ document.getElementById('btn-test-email').addEventListener('click', async () => 
 });
 ['ejs-service','ejs-template','ejs-pubkey'].forEach(id => document.getElementById(id).addEventListener('change', saveSettings));
 
+// ── INIT ──
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 const savedAuth = (() => { try { return JSON.parse(localStorage.getItem('actron-auth') || 'null'); } catch(e) { return null; } })();
 if (savedAuth?.token) showApp(savedAuth, false);
