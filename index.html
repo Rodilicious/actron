@@ -1159,6 +1159,7 @@ function showTab(name) {
   if (tab) { tab.style.display = 'flex'; tab.style.flexDirection = 'column'; }
   document.querySelector(`.nav-btn[data-tab="${name}"]`)?.classList.add('active');
   if (name === 'settings') renderZoneNameInputs();
+  if (name === 'cost') updatePowerUI();
 }
 
 // ── APP LIFECYCLE ──
