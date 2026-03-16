@@ -79,6 +79,20 @@ body {
 .mode-pill.active-heat { background: rgba(244,112,103,0.15); border-color: var(--heat); color: var(--heat); }
 .mode-pill.active-fan  { background: rgba(61,201,176,0.15);  border-color: var(--fan);  color: var(--fan);  }
 .mode-pill.active-auto { background: rgba(188,140,255,0.15); border-color: var(--auto); color: var(--auto); }
+.fan-row { display: flex; gap: 8px; margin-bottom: 0.75rem; }
+.fan-pill {
+  flex: 1; padding: 7px 4px; border-radius: 8px; border: 0.5px solid var(--border2);
+  background: var(--surface2); color: var(--muted); font-size: 11px; font-weight: 500;
+  text-align: center; cursor: pointer; transition: all 0.15s;
+}
+.fan-pill.active { background: rgba(125,133,144,0.2); border-color: var(--text); color: var(--text); }
+.dry-btn {
+  width: 100%; padding: 10px; border-radius: 8px;
+  background: rgba(61,201,176,0.1); border: 0.5px solid var(--fan);
+  color: var(--fan); font-size: 13px; font-weight: 500; cursor: pointer;
+  margin-bottom: 0.75rem; transition: opacity 0.15s;
+}
+.dry-btn:active { opacity: 0.7; }
 .set-temp-ctrl { display: flex; align-items: center; justify-content: space-between; background: var(--surface2); border-radius: 10px; padding: 6px; }
 .temp-adj-btn {
   width: 44px; height: 44px; border-radius: 8px; background: var(--surface);
@@ -203,6 +217,13 @@ body {
           <div class="mode-pill" data-mode="fan">Fan</div>
           <div class="mode-pill" data-mode="auto">Auto</div>
         </div>
+        <div class="fan-row" id="fan-row">
+          <div class="fan-pill" data-fan="0">Auto</div>
+          <div class="fan-pill" data-fan="1">Low</div>
+          <div class="fan-pill" data-fan="2">Medium</div>
+          <div class="fan-pill" data-fan="3">High</div>
+        </div>
+        <button class="dry-btn" id="btn-dry">&#128167; Dry Mode (Cool + Low Fan)</button>
       </div>
       <div class="temp-row">
         <div class="temp-card">
@@ -402,7 +423,7 @@ const JSONBIN_KEY    = '$2a$10$GCz45pcvt.RNJavm03JyjOJDsYLhyB1ABsgeTWK7s21epV2Te
 
 window.state = {
   auth: null, isDemo: false,
-  powerOn: false, currentMode: 'cool', setTemp: 22,
+  powerOn: false, currentMode: 'cool', setTemp: 22, fanSpeed: 0,
   roomTemp: null, outsideTemp: null, humidity: null, zones: [],
   pollInterval: 15, pollTimer: null,
   zoneNames: {},  // { 0: 'Study', 1: 'Bedroom', ... }
@@ -562,6 +583,7 @@ async function poll() {
     const da = data?.data?.last_data?.DA || data.DA || data;
     state.powerOn     = da.amOn === true;
     state.currentMode = MODE_MAP[da.mode] ?? state.currentMode;
+    state.fanSpeed = da.fanSpeed ?? 0;
     state.setTemp     = (da.tempTarget != null) ? da.tempTarget : state.setTemp;
     // Fetch room temp from Tuya sensor
     const tuya = await getSensorReadings();
@@ -634,6 +656,9 @@ function updateControlUI() {
   document.querySelectorAll('.mode-pill').forEach(p => {
     p.className = 'mode-pill' + (p.dataset.mode === state.currentMode ? ` active-${state.currentMode}` : '');
   });
+  document.querySelectorAll('.fan-pill').forEach(p => {
+    p.className = 'fan-pill' + (parseInt(p.dataset.fan) === state.fanSpeed ? ' active' : '');
+  });
   const rt = document.getElementById('disp-room');
   rt.textContent = state.roomTemp != null ? state.roomTemp.toFixed(1) : '--';
   rt.className = 'temp-value ' + (state.currentMode === 'heat' ? 'heat-color' : 'cool-color');
@@ -652,7 +677,7 @@ function buildPayload(overrides) {
   return {
     amOn:        state.powerOn,
     tempTarget:  state.setTemp,
-    fanSpeed:    0,
+    fanSpeed:    state.fanSpeed,
     mode:        MODE_MAP[state.currentMode] || 2,
     ...overrides
   };
@@ -668,6 +693,19 @@ async function setMode(mode) {
   updateControlUI();
   addLog(`Mode → ${mode}`, 'info');
   await actronCommand(buildPayload({ mode: MODE_MAP[mode] }));
+}
+async function setFanSpeed(speed) {
+  state.fanSpeed = speed;
+  updateControlUI();
+  addLog('Fan speed -> ' + ['Auto','Low','Medium','High'][speed], 'info');
+  await actronCommand(buildPayload({ fanSpeed: speed }));
+}
+async function setDryMode() {
+  state.currentMode = 'cool';
+  state.fanSpeed = 1;
+  updateControlUI();
+  addLog('Dry mode -- Cool + Low fan', 'info');
+  await actronCommand(buildPayload({ mode: 2, fanSpeed: 1 }));
 }
 async function adjustTemp(delta) {
   const nt = Math.min(30, Math.max(16, state.setTemp + delta));
@@ -854,6 +892,8 @@ document.getElementById('btn-login').addEventListener('click', () => {
 document.getElementById('btn-demo').addEventListener('click', () => showApp({ deviceId: 'DEMO', token: 'DEMO' }, true));
 document.getElementById('power-btn').addEventListener('click', togglePower);
 document.querySelectorAll('.mode-pill').forEach(p => p.addEventListener('click', () => setMode(p.dataset.mode)));
+document.querySelectorAll('.fan-pill').forEach(p => p.addEventListener('click', () => setFanSpeed(parseInt(p.dataset.fan))));
+document.getElementById('btn-dry').addEventListener('click', setDryMode);
 document.getElementById('btn-temp-up').addEventListener('click',   () => adjustTemp(+1));
 document.getElementById('btn-temp-down').addEventListener('click', () => adjustTemp(-1));
 document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
