@@ -266,22 +266,32 @@ body {
     <div class="scroll-area">
       <div class="guardian-card" id="guardian-card">
         <div class="guardian-header">
-          <div class="guardian-title">🛡️ Override Detection</div>
+          <div class="guardian-title">🛡️ Cloud Guardian Active</div>
+          <span class="badge badge-on">24/7</span>
         </div>
         <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:0.75rem">
-          Monitors the set temperature. If someone overrides it below your threshold on the wall panel, waits the grace period, then emails you and turns the A/C off. Resumes monitoring if it happens again.
+          The Guardian runs in the cloud every 15 minutes — no need to keep this app open. If the set temperature drops below your threshold, it will email you and turn the A/C off automatically.
         </div>
         <div class="setting-row" style="padding:8px 0">
           <div>
             <div class="setting-label">Min allowed set temp</div>
-            <div class="setting-sub">Alert triggered if set below this</div>
+            <div class="setting-sub">Cloud Guardian acts if set below this</div>
           </div>
           <div style="display:flex;align-items:center;gap:4px">
             <input class="setting-input" id="g-threshold" type="number" min="16" max="30" value="22">
             <span style="color:var(--muted);font-size:14px">°C</span>
           </div>
         </div>
-
+        <div class="setting-row" style="padding:8px 0;border-bottom:none">
+          <div>
+            <div class="setting-label">Grace period</div>
+            <div class="setting-sub">Wait before acting (synced to cloud)</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <input class="setting-input" id="g-grace" type="number" min="1" max="60" value="10">
+            <span style="color:var(--muted);font-size:14px">min</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -484,7 +494,7 @@ window.state = {
     lastTickTime: null, lastMonth: null, lastDay: null,
     history: {}
   },
-  guardianThreshold: 22,
+  guardianThreshold: 22, gracePeriodMin: 10,
 };
 
 // ── PERSISTENCE ──
@@ -492,6 +502,7 @@ function saveSettings() {
   localStorage.setItem('actron-settings', JSON.stringify({
     pollInterval: state.pollInterval,
     guardianThreshold: state.guardianThreshold,
+    gracePeriodMin: state.gracePeriodMin,
     ejsService:  document.getElementById('ejs-service').value,
     ejsTemplate: document.getElementById('ejs-template').value,
     ejsPubkey:   document.getElementById('ejs-pubkey').value,
@@ -504,6 +515,7 @@ function loadSettings() {
     const s = JSON.parse(localStorage.getItem('actron-settings') || '{}');
     if (s.pollInterval)      { state.pollInterval = s.pollInterval; document.getElementById('s-poll').value = s.pollInterval; }
     if (s.guardianThreshold) { state.guardianThreshold = s.guardianThreshold; document.getElementById('g-threshold').value = s.guardianThreshold; }
+    if (s.gracePeriodMin)    { state.gracePeriodMin = s.gracePeriodMin; document.getElementById('g-grace').value = s.gracePeriodMin; }
     if (s.ejsService)  document.getElementById('ejs-service').value = s.ejsService;
     if (s.ejsTemplate) document.getElementById('ejs-template').value = s.ejsTemplate;
     if (s.ejsPubkey)   document.getElementById('ejs-pubkey').value = s.ejsPubkey;
@@ -719,6 +731,30 @@ function renderCostChart() {
     ctx.textAlign = 'center';
     ctx.fillText(d.label, x + barW/2, H - 8);
   });
+}
+
+// ── SYNC GUARDIAN SETTINGS TO CLOUD ──
+async function syncGuardianSettingsToCloud() {
+  try {
+    const resp = await fetch('https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID + '/latest', {
+      headers: { 'X-Access-Key': JSONBIN_KEY }
+    });
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const record = data.record || {};
+    record.settings = {
+      guardianThreshold: state.guardianThreshold,
+      gracePeriodMin: state.gracePeriodMin
+    };
+    await fetch('https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Access-Key': JSONBIN_KEY },
+      body: JSON.stringify(record)
+    });
+    addLog('Guardian settings synced to cloud', 'ok');
+  } catch(e) {
+    addLog('Cloud sync failed: ' + e.message, 'warn');
+  }
 }
 
 // ── POLL ──
@@ -950,7 +986,14 @@ document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', (
 document.getElementById('g-threshold').addEventListener('change', () => {
   state.guardianThreshold = parseInt(document.getElementById('g-threshold').value);
   saveSettings();
+  syncGuardianSettingsToCloud();
   addLog('Guardian threshold set to ' + state.guardianThreshold + 'C', 'info');
+});
+document.getElementById('g-grace').addEventListener('change', () => {
+  state.gracePeriodMin = parseInt(document.getElementById('g-grace').value);
+  saveSettings();
+  syncGuardianSettingsToCloud();
+  addLog('Grace period set to ' + state.gracePeriodMin + ' min', 'info');
 });
 document.getElementById('s-poll').addEventListener('change', () => {
   state.pollInterval = parseInt(document.getElementById('s-poll').value) || 15;
