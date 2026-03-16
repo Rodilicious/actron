@@ -252,24 +252,7 @@ body {
         <div class="card-label">Zones</div>
         <div class="zone-list" id="zone-list"><div style="color:var(--muted);font-size:13px">Loading zones…</div></div>
       </div>
-      <div class="power-card">
-        <div class="card-label">Estimated Power Usage</div>
-        <div class="power-grid">
-          <div class="power-stat">
-            <div class="power-stat-value" id="disp-kw" style="color:var(--warn)">--</div>
-            <div class="power-stat-label">kW</div>
-          </div>
-          <div class="power-stat">
-            <div class="power-stat-value" id="disp-amps" style="color:var(--accent)">--</div>
-            <div class="power-stat-label">Amps</div>
-          </div>
-          <div class="power-stat">
-            <div class="power-stat-value" id="disp-cost" style="color:var(--success)">--</div>
-            <div class="power-stat-label">$/hr</div>
-          </div>
-        </div>
-        <div style="font-size:10px;color:var(--muted);margin-top:8px;text-align:center">Estimate based on rated specs · 35c/kWh Sydney rate</div>
-      </div>
+
       <div class="last-poll">Last poll: <span id="last-poll-time">never</span></div>
     </div>
   </div>
@@ -362,6 +345,87 @@ body {
     </div>
   </div>
 
+  <!-- COST TAB -->
+  <div id="tab-cost" class="tab-content" style="flex:1;display:none;flex-direction:column;overflow:hidden;">
+    <div class="top-bar"><h2>Cost Tracker</h2></div>
+    <div class="scroll-area">
+
+      <!-- Current power -->
+      <div class="card">
+        <div class="card-label">Current Power Usage</div>
+        <div class="power-grid">
+          <div class="power-stat">
+            <div class="power-stat-value" id="disp-kw2" style="color:var(--warn)">--</div>
+            <div class="power-stat-label">kW</div>
+          </div>
+          <div class="power-stat">
+            <div class="power-stat-value" id="disp-amps2" style="color:var(--accent)">--</div>
+            <div class="power-stat-label">Amps</div>
+          </div>
+          <div class="power-stat">
+            <div class="power-stat-value" id="disp-cost2" style="color:var(--success)">--</div>
+            <div class="power-stat-label">$/hr</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tariff setting -->
+      <div class="card">
+        <div class="card-label">Electricity Tariff</div>
+        <div class="setting-row" style="border-bottom:none">
+          <div>
+            <div class="setting-label">Rate per kWh</div>
+            <div class="setting-sub">Check your electricity bill</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <span style="color:var(--muted);font-size:14px">$</span>
+            <input class="setting-input" id="tariff-input" type="number" min="0.1" max="1.0" step="0.01" value="0.35" style="width:70px">
+            <span style="color:var(--muted);font-size:14px">/kWh</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Running costs -->
+      <div class="card">
+        <div class="card-label">Running Costs</div>
+        <div class="setting-row">
+          <div class="setting-label">Today</div>
+          <div style="font-size:18px;font-weight:300;color:var(--success)" id="cost-today">$0.00</div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">This month</div>
+          <div style="font-size:18px;font-weight:300;color:var(--warn)" id="cost-month">$0.00</div>
+        </div>
+        <div class="setting-row" style="border-bottom:none">
+          <div class="setting-label">Total tracked</div>
+          <div style="font-size:18px;font-weight:300;color:var(--muted)" id="cost-total">$0.00</div>
+        </div>
+      </div>
+
+      <!-- Run time -->
+      <div class="card">
+        <div class="card-label">Run Time</div>
+        <div class="setting-row">
+          <div class="setting-label">Today</div>
+          <div style="font-size:15px;color:var(--text)" id="runtime-today">0h 0m</div>
+        </div>
+        <div class="setting-row" style="border-bottom:none">
+          <div class="setting-label">This month</div>
+          <div style="font-size:15px;color:var(--text)" id="runtime-month">0h 0m</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Actions</div>
+        <button class="btn btn-secondary" id="btn-reset-today" style="margin-bottom:8px">Reset Today</button>
+        <button class="btn btn-danger" id="btn-reset-all">Reset All Data</button>
+        <p style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5">
+          Costs are estimates based on rated specs. Monthly counter resets automatically on the 1st of each month. Tracking only works while the app is open.
+        </p>
+      </div>
+    </div>
+  </div>
+
   <!-- SETTINGS TAB -->
   <div id="tab-settings" class="tab-content" style="flex:1;display:none;flex-direction:column;overflow:hidden;">
     <div class="top-bar"><h2>Settings</h2></div>
@@ -428,6 +492,10 @@ body {
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       Log
     </button>
+    <button class="nav-btn" data-tab="cost">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Cost
+    </button>
     <button class="nav-btn" data-tab="settings">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       Settings
@@ -448,8 +516,13 @@ window.state = {
   auth: null, isDemo: false,
   powerOn: false, currentMode: 'cool', setTemp: 22, fanSpeed: 0,
   roomTemp: null, outsideTemp: null, humidity: null, zones: [],
-  pollInterval: 15, pollTimer: null,
-  zoneNames: {},  // { 0: 'Study', 1: 'Bedroom', ... }
+  pollInterval: 15, pollTimer: null, costTimer: null,
+  zoneNames: {},
+  tariff: 0.35,
+  costTracker: {
+    todayKwh: 0, monthKwh: 0, totalKwh: 0,
+    lastTickTime: null, lastMonth: null, lastDay: null
+  },
   guardianEnabled: false, guardianThreshold: 22, gracePeriodMin: 10,
   guardianState: 'idle',
   countdownTimer: null, countdownEnd: null, overrideDetectedTemp: null,
@@ -597,6 +670,91 @@ window.getSensorReadings = async function() {
   }
 }
 
+// ── COST TRACKING ──
+function getCurrentKw() {
+  if (!state.powerOn) return 0;
+  const modeMap = POWER_MAP[state.currentMode] || POWER_MAP.cool;
+  return modeMap[state.fanSpeed] || modeMap[0];
+}
+
+function tickCostTracker() {
+  const now = new Date();
+  const todayStr  = now.toISOString().slice(0,10);
+  const monthStr  = now.toISOString().slice(0,7);
+  const ct = state.costTracker;
+
+  // Auto-reset on new day
+  if (ct.lastDay && ct.lastDay !== todayStr) {
+    ct.todayKwh = 0;
+  }
+  // Auto-reset on new month
+  if (ct.lastMonth && ct.lastMonth !== monthStr) {
+    ct.monthKwh = 0;
+  }
+  ct.lastDay   = todayStr;
+  ct.lastMonth = monthStr;
+
+  // Accumulate kWh if AC is on (tick every minute = 1/60 of an hour)
+  if (state.powerOn && ct.lastTickTime) {
+    const elapsedHrs = (Date.now() - ct.lastTickTime) / 3600000;
+    const kw = getCurrentKw();
+    const kwh = kw * elapsedHrs;
+    ct.todayKwh  += kwh;
+    ct.monthKwh  += kwh;
+    ct.totalKwh  += kwh;
+  }
+  ct.lastTickTime = Date.now();
+  saveCostData();
+  updateCostUI();
+}
+
+function saveCostData() {
+  localStorage.setItem('actron-cost', JSON.stringify(state.costTracker));
+  localStorage.setItem('actron-tariff', state.tariff.toString());
+}
+
+function loadCostData() {
+  try {
+    const ct = JSON.parse(localStorage.getItem('actron-cost') || 'null');
+    if (ct) state.costTracker = ct;
+    const t = parseFloat(localStorage.getItem('actron-tariff'));
+    if (t) { state.tariff = t; document.getElementById('tariff-input').value = t; }
+  } catch(e) {}
+}
+
+function updateCostUI() {
+  const ct = state.costTracker;
+  const t  = state.tariff;
+  const kw = getCurrentKw();
+  const hrCost = (kw * t).toFixed(2);
+
+  // Update cost tab
+  const kw2   = document.getElementById('disp-kw2');
+  const amp2  = document.getElementById('disp-amps2');
+  const cost2 = document.getElementById('disp-cost2');
+  if (kw2) {
+    kw2.textContent   = state.powerOn ? kw.toFixed(2) : '0.00';
+    amp2.textContent  = state.powerOn ? (kw * 1000 / 230).toFixed(1) : '0.0';
+    cost2.textContent = state.powerOn ? '$' + hrCost : '$0.00';
+    kw2.style.color   = kw > 3.5 ? 'var(--danger)' : kw > 2.5 ? 'var(--warn)' : 'var(--muted)';
+  }
+
+  const todayEl  = document.getElementById('cost-today');
+  const monthEl  = document.getElementById('cost-month');
+  const totalEl  = document.getElementById('cost-total');
+  const rtTodayEl  = document.getElementById('runtime-today');
+  const rtMonthEl  = document.getElementById('runtime-month');
+  if (todayEl) {
+    todayEl.textContent  = '$' + (ct.todayKwh  * t).toFixed(2);
+    monthEl.textContent  = '$' + (ct.monthKwh  * t).toFixed(2);
+    totalEl.textContent  = '$' + (ct.totalKwh  * t).toFixed(2);
+    const todayHrs  = ct.todayKwh  / Math.max(getCurrentKw(), 0.3);
+    const monthHrs  = ct.monthKwh  / Math.max(getCurrentKw(), 0.3);
+    rtTodayEl.textContent  = Math.floor(todayHrs) + 'h ' + Math.round((todayHrs % 1) * 60) + 'm';
+    rtMonthEl.textContent  = Math.floor(monthHrs) + 'h ' + Math.round((monthHrs % 1) * 60) + 'm';
+  }
+}
+
 // ── POLL ──
 async function poll() {
   setConnStatus('connecting');
@@ -640,8 +798,11 @@ function setConnStatus(s) {
 
 function startPolling() {
   clearInterval(state.pollTimer);
+  clearInterval(state.costTimer);
   poll();
   state.pollTimer = setInterval(poll, state.pollInterval * 60 * 1000);
+  state.costTimer = setInterval(tickCostTracker, 60000);
+  tickCostTracker();
 }
 
 // ── ZONE NAME EDITOR ──
@@ -696,6 +857,7 @@ function updatePowerUI() {
   ampEl.textContent = amps;
   costEl.textContent = centsPerHr;
   kwEl.style.color = kw > 3.5 ? 'var(--danger)' : kw > 2.5 ? 'var(--warn)' : 'var(--success)';
+  updateCostUI();
 }
 
 // -- UI UPDATE --
@@ -912,6 +1074,7 @@ function showApp(auth, isDemo) {
   document.getElementById('s-user-display').textContent = auth?.deviceId || 'Demo';
   document.getElementById('s-key-display').textContent = auth?.token ? '••••' + auth.token.slice(-4) : 'Demo';
   loadSettings();
+  loadCostData();
   showTab('control');
   startPolling();
   if ('wakeLock' in navigator) {
@@ -974,6 +1137,19 @@ document.getElementById('btn-test-email').addEventListener('click', async () => 
   setTimeout(() => { res.textContent = ''; }, 5000);
 });
 ['ejs-service','ejs-template','ejs-pubkey'].forEach(id => document.getElementById(id).addEventListener('change', saveSettings));
+document.getElementById('tariff-input').addEventListener('change', () => {
+  state.tariff = parseFloat(document.getElementById('tariff-input').value) || 0.35;
+  saveCostData(); updateCostUI();
+});
+document.getElementById('btn-reset-today').addEventListener('click', () => {
+  state.costTracker.todayKwh = 0; saveCostData(); updateCostUI();
+  addLog('Today cost reset', 'info');
+});
+document.getElementById('btn-reset-all').addEventListener('click', () => {
+  state.costTracker = { todayKwh: 0, monthKwh: 0, totalKwh: 0, lastTickTime: null, lastMonth: null, lastDay: null };
+  saveCostData(); updateCostUI();
+  addLog('All cost data reset', 'info');
+});
 
 // ── INIT ──
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
