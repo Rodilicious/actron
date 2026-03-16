@@ -33,8 +33,8 @@ jobs:
 
             const DEVICE_ID    = process.env.ACTRON_DEVICE_ID;
             const TOKEN        = process.env.ACTRON_TOKEN;
-            const THRESHOLD    = parseFloat(process.env.GUARDIAN_THRESHOLD || '22');
-            const GRACE_MS     = parseFloat(process.env.GUARDIAN_GRACE_MIN || '20') * 60 * 1000;
+            const THRESHOLD_DEFAULT = parseFloat(process.env.GUARDIAN_THRESHOLD || '22');
+            const GRACE_MIN_DEFAULT = parseFloat(process.env.GUARDIAN_GRACE_MIN || '10');
             const ALERT_EMAIL  = process.env.ALERT_EMAIL;
             const EJS_SERVICE  = process.env.EMAILJS_SERVICE;
             const EJS_TEMPLATE = process.env.EMAILJS_TEMPLATE;
@@ -161,6 +161,10 @@ jobs:
             let bin;
             try { bin = await loadBin(); } catch(e) { bin = {}; console.log('JSONBin load failed:', e.message); }
 
+            // Read threshold and grace period from app settings saved in JSONBin
+            const THRESHOLD = bin.settings?.guardianThreshold || THRESHOLD_DEFAULT;
+            const GRACE_MS  = (bin.settings?.gracePeriodMin || GRACE_MIN_DEFAULT) * 60 * 1000;
+            console.log('Using threshold: ' + THRESHOLD + 'C, grace: ' + (GRACE_MS/60000) + 'min (from ' + (bin.settings?.guardianThreshold ? 'JSONBin' : 'defaults') + ')');
             let overrideFirstSeen = bin.overrideFirstSeen || null;
             let cost = bin.cost || { todayKwh: 0, monthKwh: 0, totalKwh: 0, lastDay: null, lastMonth: null, history: {} };
 
