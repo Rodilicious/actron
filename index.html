@@ -947,21 +947,6 @@ const POWER_MAP = {
 const TARIFF = 0.35;
 
 function updatePowerUI() {
-  const kwEl   = document.getElementById('disp-kw');
-  const ampEl  = document.getElementById('disp-amps');
-  const costEl = document.getElementById('disp-cost');
-  if (!state.powerOn) {
-    kwEl.textContent = '0.0'; ampEl.textContent = '0.0'; costEl.textContent = '0';
-    kwEl.style.color = 'var(--muted)'; return;
-  }
-  const modeMap = POWER_MAP[state.currentMode] || POWER_MAP.cool;
-  const kw = modeMap[state.fanSpeed] || modeMap[0];
-  const amps = (kw * 1000 / 230).toFixed(1);
-  const centsPerHr = (kw * TARIFF).toFixed(2);
-  kwEl.textContent  = kw.toFixed(2);
-  ampEl.textContent = amps;
-  costEl.textContent = centsPerHr;
-  kwEl.style.color = kw > 3.5 ? 'var(--danger)' : kw > 2.5 ? 'var(--warn)' : 'var(--success)';
   updateCostUI();
 }
 
@@ -1039,7 +1024,7 @@ window.toggleZone = async function(idx) {
   const cmd = {};
   state.zones.forEach((z, i) => { cmd[`zone${i+1}amOn`] = z.amOn; });
   await actronCommand(cmd);
-  addLog(`Zone "${state.zones[idx].name}" → ${state.zones[idx].amOn ? 'ON' : 'OFF'}`, 'info');
+  addLog(`Zone "${state.zoneNames[idx] || state.zones[idx].name || 'Zone '+(idx+1)}" → ${state.zones[idx].amOn ? 'ON' : 'OFF'}`, 'info');
 }
 
 // ── GUARDIAN ──
