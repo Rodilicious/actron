@@ -261,13 +261,12 @@ body {
   <div id="tab-guardian" class="tab-content" style="flex:1;display:none;flex-direction:column;overflow:hidden;">
     <div class="top-bar">
       <h2>Temperature Guardian</h2>
-      <span class="badge badge-off" id="guardian-badge">Off</span>
+      <span class="badge badge-on">Active</span>
     </div>
     <div class="scroll-area">
       <div class="guardian-card" id="guardian-card">
         <div class="guardian-header">
           <div class="guardian-title">🛡️ Override Detection</div>
-          <div class="toggle" id="guardian-toggle"></div>
         </div>
         <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:0.75rem">
           Monitors the set temperature. If someone overrides it below your threshold on the wall panel, waits the grace period, then emails you and turns the A/C off. Resumes monitoring if it happens again.
@@ -282,54 +281,7 @@ body {
             <span style="color:var(--muted);font-size:14px">°C</span>
           </div>
         </div>
-        <div class="setting-row" style="padding:8px 0;border-bottom:none">
-          <div>
-            <div class="setting-label">Grace period</div>
-            <div class="setting-sub">Wait before acting</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:4px">
-            <input class="setting-input" id="g-grace" type="number" min="1" max="60" value="10">
-            <span style="color:var(--muted);font-size:14px">min</span>
-          </div>
-        </div>
-      </div>
 
-      <!-- Countdown -->
-      <div class="countdown-wrap" id="countdown-wrap">
-        <div class="override-info" id="override-info">Set temp overridden to <strong id="override-val">--</strong>°C</div>
-        <div class="countdown-num" id="countdown-num">--:--</div>
-        <div class="countdown-label">until A/C turns off</div>
-        <button class="btn btn-secondary" id="btn-cancel-countdown" style="margin-top:12px;width:auto;padding:8px 20px;font-size:13px">Cancel — temp was corrected</button>
-      </div>
-
-      <!-- EmailJS config -->
-      <div class="card" style="margin-top:0.75rem">
-        <div class="card-label">Alert Email — EmailJS Setup</div>
-        <div class="setting-row" style="padding:8px 0">
-          <div class="setting-label">Service ID</div>
-          <input class="setting-input" id="ejs-service" type="text" placeholder="service_xxx" style="width:150px;text-align:left;font-size:13px">
-        </div>
-        <div class="setting-row" style="padding:8px 0">
-          <div class="setting-label">Template ID</div>
-          <input class="setting-input" id="ejs-template" type="text" placeholder="template_xxx" style="width:150px;text-align:left;font-size:13px">
-        </div>
-        <div class="setting-row" style="padding:8px 0">
-          <div class="setting-label">Public Key</div>
-          <input class="setting-input" id="ejs-pubkey" type="text" placeholder="your_public_key" style="width:150px;text-align:left;font-size:13px">
-        </div>
-        <div style="margin-top:10px;display:flex;align-items:center;gap:10px">
-          <button class="btn btn-secondary" id="btn-test-email" style="width:auto;padding:8px 16px;font-size:13px">Send test email</button>
-          <span id="email-test-result" style="font-size:12px;color:var(--muted)"></span>
-        </div>
-        <p style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.6">
-          Free at emailjs.com (200 emails/month). Alert sent to rod.crowder@opscentre.com.<br>
-          Template variables: <code style="color:var(--accent)">{{override_temp}}</code> <code style="color:var(--accent)">{{room_temp}}</code> <code style="color:var(--accent)">{{threshold}}</code> <code style="color:var(--accent)">{{action}}</code> <code style="color:var(--accent)">{{time}}</code>
-        </p>
-      </div>
-
-      <div class="card">
-        <div class="card-label">Guardian Status</div>
-        <div id="guardian-status-text" style="font-size:13px;color:var(--muted);line-height:1.6">Guardian is off.</div>
       </div>
     </div>
   </div>
@@ -524,7 +476,7 @@ window.state = {
   auth: null, isDemo: false,
   powerOn: false, currentMode: 'cool', setTemp: 22, fanSpeed: 0,
   roomTemp: null, outsideTemp: null, humidity: null, zones: [],
-  pollInterval: 15, pollTimer: null, costTimer: null,
+  pollInterval: 15, pollTimer: null,
   zoneNames: {},
   tariff: 0.35,
   costTracker: {
@@ -532,9 +484,7 @@ window.state = {
     lastTickTime: null, lastMonth: null, lastDay: null,
     history: {}
   },
-  guardianEnabled: false, guardianThreshold: 22, gracePeriodMin: 10,
-  guardianState: 'idle',
-  countdownTimer: null, countdownEnd: null, overrideDetectedTemp: null,
+  guardianThreshold: 22,
 };
 
 // ── PERSISTENCE ──
@@ -542,8 +492,6 @@ function saveSettings() {
   localStorage.setItem('actron-settings', JSON.stringify({
     pollInterval: state.pollInterval,
     guardianThreshold: state.guardianThreshold,
-    gracePeriodMin: state.gracePeriodMin,
-    guardianEnabled: state.guardianEnabled,
     ejsService:  document.getElementById('ejs-service').value,
     ejsTemplate: document.getElementById('ejs-template').value,
     ejsPubkey:   document.getElementById('ejs-pubkey').value,
@@ -556,12 +504,10 @@ function loadSettings() {
     const s = JSON.parse(localStorage.getItem('actron-settings') || '{}');
     if (s.pollInterval)      { state.pollInterval = s.pollInterval; document.getElementById('s-poll').value = s.pollInterval; }
     if (s.guardianThreshold) { state.guardianThreshold = s.guardianThreshold; document.getElementById('g-threshold').value = s.guardianThreshold; }
-    if (s.gracePeriodMin)    { state.gracePeriodMin = s.gracePeriodMin; document.getElementById('g-grace').value = s.gracePeriodMin; }
     if (s.ejsService)  document.getElementById('ejs-service').value = s.ejsService;
     if (s.ejsTemplate) document.getElementById('ejs-template').value = s.ejsTemplate;
     if (s.ejsPubkey)   document.getElementById('ejs-pubkey').value = s.ejsPubkey;
     if (s.zoneNames)   { state.zoneNames = s.zoneNames; renderZoneNameInputs(); }
-    if (s.guardianEnabled) { state.guardianEnabled = s.guardianEnabled; updateGuardianUI(); }
   } catch(e) {}
 }
 
@@ -612,56 +558,8 @@ async function actronCommand(cmd) {
   });
 }
 
-// ── TUYA API ──
-window.tuyaSign = async function(method, path, accessToken, body) {
-  const t = Date.now().toString();
-  const contentHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(body || ''))
-    .then(b => Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2,'0')).join(''));
-  const stringToSign = [method, contentHash, '', path].join('\n');
-  const str = accessToken
-    ? TUYA_CLIENT_ID + accessToken + t + stringToSign
-    : TUYA_CLIENT_ID + t + stringToSign;
-  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(TUYA_SECRET),
-    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(str));
-  const sign = Array.from(new Uint8Array(sig)).map(x => x.toString(16).padStart(2,'0')).join('').toUpperCase();
-  return { t, sign };
-}
 
-window.tuyaGetToken = async function() {
-  const path = '/v1.0/token?grant_type=1';
-  const { t, sign } = await tuyaSign('GET', path, '');
-  const resp = await fetch(TUYA_BASE_URL + path, {
-    headers: { 'client_id': TUYA_CLIENT_ID, 't': t, 'sign': sign, 'sign_method': 'HMAC-SHA256' }
-  });
-  const data = await resp.json();
-  if (!data.success) throw new Error('Tuya token failed: ' + data.msg);
-  return data.result.access_token;
-}
 
-window.tuyaGetTemperature = async function() {
-  if (state.isDemo) return { temp: 23.5, humidity: 58 };
-  try {
-    const token = await tuyaGetToken();
-    const path = `/v1.0/iot-03/devices/${TUYA_DEVICE_ID}/properties`;
-    const { t, sign } = await tuyaSign('GET', path, token);
-    const resp = await fetch(TUYA_BASE_URL + path, {
-      headers: { 'client_id': TUYA_CLIENT_ID, 'access_token': token, 't': t, 'sign': sign, 'sign_method': 'HMAC-SHA256' }
-    });
-    const data = await resp.json();
-    if (!data.success) throw new Error('Tuya properties failed: ' + data.msg);
-    const props = data.result.properties;
-    const tempProp = props.find(p => p.code === 'temp_current');
-    const humProp  = props.find(p => p.code === 'humidity_value');
-    return {
-      temp:     tempProp ? tempProp.value / 10 : null,
-      humidity: humProp  ? humProp.value       : null
-    };
-  } catch(e) {
-    console.error('Tuya error:', e.message);
-    return { temp: null, humidity: null };
-  }
-}
 
 // ── SENSOR: read from JSONBin (written by Pipedream) ──
 window.getSensorReadings = async function() {
@@ -696,43 +594,6 @@ function getCurrentKw() {
   return modeMap[state.fanSpeed] || modeMap[0];
 }
 
-function tickCostTracker() {
-  const now = new Date();
-  const todayStr  = now.toISOString().slice(0,10);
-  const monthStr  = now.toISOString().slice(0,7);
-  const ct = state.costTracker;
-
-  // Auto-reset on new day
-  if (ct.lastDay && ct.lastDay !== todayStr) {
-    ct.todayKwh = 0;
-  }
-  // Auto-reset on new month
-  if (ct.lastMonth && ct.lastMonth !== monthStr) {
-    ct.monthKwh = 0;
-  }
-  ct.lastDay   = todayStr;
-  ct.lastMonth = monthStr;
-
-  // Accumulate kWh if AC is on (tick every minute = 1/60 of an hour)
-  if (state.powerOn && ct.lastTickTime) {
-    const elapsedHrs = (Date.now() - ct.lastTickTime) / 3600000;
-    const kw = getCurrentKw();
-    const kwh = kw * elapsedHrs;
-    ct.todayKwh  += kwh;
-    ct.monthKwh  += kwh;
-    ct.totalKwh  += kwh;
-  }
-  // Save today's kWh to history
-  if (ct.lastDay) {
-    ct.history[ct.lastDay] = ct.todayKwh;
-    // Keep only last 7 days
-    const keys = Object.keys(ct.history).sort();
-    if (keys.length > 7) delete ct.history[keys[0]];
-  }
-  ct.lastTickTime = Date.now();
-  saveCostData();
-  updateCostUI();
-}
 
 function saveCostData() {
   localStorage.setItem('actron-cost', JSON.stringify(state.costTracker));
@@ -884,7 +745,6 @@ async function poll() {
     }
     setConnStatus('online');
     updateControlUI();
-    checkGuardian(state.setTemp);
     renderZoneNameInputs();
     const tempStr = state.roomTemp != null ? `, room ${state.roomTemp.toFixed(1)}°C` : '';
     addLog(`Poll — set temp ${state.setTemp}°C, ${state.powerOn ? 'ON' : 'OFF'}, mode ${state.currentMode}${tempStr}`, 'ok');
@@ -903,11 +763,8 @@ function setConnStatus(s) {
 
 function startPolling() {
   clearInterval(state.pollTimer);
-  clearInterval(state.costTimer);
   poll();
   state.pollTimer = setInterval(poll, state.pollInterval * 60 * 1000);
-  state.costTimer = setInterval(tickCostTracker, 60000);
-  tickCostTracker();
 }
 
 // ── ZONE NAME EDITOR ──
@@ -1028,123 +885,11 @@ window.toggleZone = async function(idx) {
 }
 
 // ── GUARDIAN ──
-function checkGuardian(currentSetTemp) {
-  if (!state.guardianEnabled || currentSetTemp == null) return;
-  const threshold = parseInt(document.getElementById('g-threshold').value) || state.guardianThreshold;
-  if (currentSetTemp < threshold) {
-    if (state.guardianState === 'idle') {
-      state.guardianState = 'countdown';
-      state.overrideDetectedTemp = currentSetTemp;
-      startCountdown();
-      addLog(`⚠️ Override detected — set temp is ${currentSetTemp}°C (threshold: ${threshold}°C). Grace period started.`, 'warn');
-    }
-  } else {
-    if (state.guardianState === 'countdown') {
-      cancelCountdown();
-      addLog(`✓ Override corrected — set temp back to ${currentSetTemp}°C. Guardian reset.`, 'ok');
-    } else if (state.guardianState === 'acted') {
-      state.guardianState = 'idle';
-      addLog('Guardian resumed monitoring.', 'info');
-    }
-  }
-  updateGuardianUI();
-}
 
-function startCountdown() {
-  const graceMs = (parseInt(document.getElementById('g-grace').value) || state.gracePeriodMin) * 60 * 1000;
-  state.countdownEnd = Date.now() + graceMs;
-  document.getElementById('countdown-wrap').classList.add('visible');
-  document.getElementById('override-val').textContent = state.overrideDetectedTemp;
-  clearInterval(state.countdownTimer);
-  state.countdownTimer = setInterval(() => {
-    const rem = state.countdownEnd - Date.now();
-    if (rem <= 0) {
-      clearInterval(state.countdownTimer);
-      executeGuardianAction();
-    } else {
-      const m = Math.floor(rem / 60000), s = Math.floor((rem % 60000) / 1000);
-      document.getElementById('countdown-num').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-    }
-  }, 1000);
-}
 
-function cancelCountdown() {
-  clearInterval(state.countdownTimer);
-  state.guardianState = 'idle';
-  state.countdownEnd = null;
-  document.getElementById('countdown-wrap').classList.remove('visible');
-  document.getElementById('countdown-num').textContent = '--:--';
-  updateGuardianUI();
-}
 
-async function executeGuardianAction() {
-  state.guardianState = 'acted';
-  document.getElementById('countdown-wrap').classList.remove('visible');
-  addLog('🚨 Grace period expired. Turning A/C off and sending alert email.', 'alert');
-  try {
-    await actronCommand(buildPayload({ amOn: false }));
-    state.powerOn = false;
-    updateControlUI();
-    addLog('A/C turned OFF by Guardian.', 'alert');
-  } catch(e) {
-    addLog(`Failed to turn A/C off: ${e.message}`, 'alert');
-  }
-  await sendGuardianEmail('turned_off');
-  updateGuardianUI();
-}
 
-async function sendGuardianEmail(action) {
-  const svc  = document.getElementById('ejs-service').value.trim();
-  const tmpl = document.getElementById('ejs-template').value.trim();
-  const key  = document.getElementById('ejs-pubkey').value.trim();
-  if (!svc || !tmpl || !key) {
-    addLog('Email not sent — EmailJS not configured in Guardian tab.', 'warn');
-    return;
-  }
-  try {
-    emailjs.init(key);
-    await emailjs.send(svc, tmpl, {
-      to_email:      ALERT_EMAIL,
-      override_temp: state.overrideDetectedTemp,
-      room_temp:     state.roomTemp?.toFixed(1) || 'unknown',
-      threshold:     state.guardianThreshold,
-      action:        action === 'turned_off' ? 'A/C has been turned off by Guardian.' : 'Test alert.',
-      time:          new Date().toLocaleString('en-AU'),
-    });
-    addLog(`Alert email sent to ${ALERT_EMAIL}`, 'ok');
-  } catch(e) {
-    addLog(`Email failed: ${JSON.stringify(e)}`, 'alert');
-  }
-}
 
-function updateGuardianUI() {
-  const badge  = document.getElementById('guardian-badge');
-  const status = document.getElementById('guardian-status-text');
-  const card   = document.getElementById('guardian-card');
-  const tog    = document.getElementById('guardian-toggle');
-  tog.className = 'toggle' + (state.guardianEnabled ? ' on' : '');
-  if (!state.guardianEnabled) {
-    badge.className = 'badge badge-off'; badge.textContent = 'Off';
-    card.className = 'guardian-card';
-    status.style.color = 'var(--muted)';
-    status.textContent = 'Guardian is off. Enable the toggle above to start monitoring.';
-  } else if (state.guardianState === 'countdown') {
-    badge.className = 'badge badge-alert'; badge.textContent = 'Alert';
-    card.className = 'guardian-card armed';
-    status.style.color = 'var(--warn)';
-    status.textContent = `Override detected (${state.overrideDetectedTemp}°C). Counting down grace period…`;
-  } else if (state.guardianState === 'acted') {
-    badge.className = 'badge badge-alert'; badge.textContent = 'Acted';
-    card.className = 'guardian-card triggered';
-    status.style.color = 'var(--danger)';
-    status.textContent = 'A/C was turned off by Guardian. Monitoring — will act again if repeated.';
-  } else {
-    badge.className = 'badge badge-on'; badge.textContent = 'Watching';
-    card.className = 'guardian-card';
-    status.style.color = 'var(--success)';
-    status.textContent = `Monitoring every ${state.pollInterval} min. Threshold: ${state.guardianThreshold}°C. Grace period: ${state.gracePeriodMin} min.`;
-  }
-}
 
 // ── NAV ──
 function showTab(name) {
@@ -1202,15 +947,11 @@ document.getElementById('btn-dry').addEventListener('click', setDryMode);
 document.getElementById('btn-temp-up').addEventListener('click',   () => adjustTemp(+1));
 document.getElementById('btn-temp-down').addEventListener('click', () => adjustTemp(-1));
 document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
-document.getElementById('guardian-toggle').addEventListener('click', () => {
-  state.guardianEnabled = !state.guardianEnabled;
-  if (!state.guardianEnabled) { cancelCountdown(); state.guardianState = 'idle'; }
-  saveSettings(); updateGuardianUI();
-  addLog(`Guardian ${state.guardianEnabled ? 'enabled' : 'disabled'}`, 'info');
+document.getElementById('g-threshold').addEventListener('change', () => {
+  state.guardianThreshold = parseInt(document.getElementById('g-threshold').value);
+  saveSettings();
+  addLog('Guardian threshold set to ' + state.guardianThreshold + 'C', 'info');
 });
-document.getElementById('btn-cancel-countdown').addEventListener('click', () => { cancelCountdown(); addLog('Countdown cancelled manually.', 'info'); });
-document.getElementById('g-threshold').addEventListener('change', () => { state.guardianThreshold = parseInt(document.getElementById('g-threshold').value); saveSettings(); updateGuardianUI(); });
-document.getElementById('g-grace').addEventListener('change',    () => { state.gracePeriodMin    = parseInt(document.getElementById('g-grace').value);     saveSettings(); updateGuardianUI(); });
 document.getElementById('s-poll').addEventListener('change', () => {
   state.pollInterval = parseInt(document.getElementById('s-poll').value) || 15;
   saveSettings(); startPolling();
