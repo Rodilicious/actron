@@ -157,6 +157,11 @@ body {
 .log-alert { color: var(--danger); }
 .log-ok    { color: var(--success); }
 .last-poll { font-size: 11px; color: var(--muted); text-align: center; padding: 4px 0; }
+.power-card { background: var(--surface); border: 0.5px solid var(--border2); border-radius: 12px; padding: 1rem 1.125rem; margin-bottom: 0.75rem; }
+.power-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.power-stat { background: var(--surface2); border-radius: 8px; padding: 10px 8px; text-align: center; }
+.power-stat-value { font-size: 20px; font-weight: 300; letter-spacing: -0.5px; }
+.power-stat-label { font-size: 10px; color: var(--muted); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
 .wake-warning { background: rgba(210,153,34,0.08); border: 0.5px solid rgba(210,153,34,0.25); border-radius: 8px; padding: 10px 12px; margin-bottom: 0.75rem; font-size: 12px; color: var(--warn); line-height: 1.5; }
 </style>
 </head>
@@ -246,6 +251,24 @@ body {
       <div class="card" id="zones-card">
         <div class="card-label">Zones</div>
         <div class="zone-list" id="zone-list"><div style="color:var(--muted);font-size:13px">Loading zones…</div></div>
+      </div>
+      <div class="power-card">
+        <div class="card-label">Estimated Power Usage</div>
+        <div class="power-grid">
+          <div class="power-stat">
+            <div class="power-stat-value" id="disp-kw" style="color:var(--warn)">--</div>
+            <div class="power-stat-label">kW</div>
+          </div>
+          <div class="power-stat">
+            <div class="power-stat-value" id="disp-amps" style="color:var(--accent)">--</div>
+            <div class="power-stat-label">Amps</div>
+          </div>
+          <div class="power-stat">
+            <div class="power-stat-value" id="disp-cost" style="color:var(--success)">--</div>
+            <div class="power-stat-label">c/hr</div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:8px;text-align:center">Estimate based on rated specs · 35c/kWh Sydney rate</div>
       </div>
       <div class="last-poll">Last poll: <span id="last-poll-time">never</span></div>
     </div>
@@ -648,7 +671,34 @@ window.updateZoneName = function(idx, name) {
   updateControlUI();
 }
 
-// ── UI UPDATE ──
+// -- POWER ESTIMATION --
+const POWER_MAP = {
+  cool: { 0: 3.2, 1: 2.1, 2: 3.2, 3: 4.29 },
+  heat: { 0: 2.8, 1: 1.8, 2: 2.8, 3: 3.8  },
+  fan:  { 0: 0.3, 1: 0.2, 2: 0.3, 3: 0.4  },
+  auto: { 0: 3.2, 1: 2.1, 2: 3.2, 3: 4.29 },
+};
+const TARIFF = 0.35;
+
+function updatePowerUI() {
+  const kwEl   = document.getElementById('disp-kw');
+  const ampEl  = document.getElementById('disp-amps');
+  const costEl = document.getElementById('disp-cost');
+  if (!state.powerOn) {
+    kwEl.textContent = '0.0'; ampEl.textContent = '0.0'; costEl.textContent = '0';
+    kwEl.style.color = 'var(--muted)'; return;
+  }
+  const modeMap = POWER_MAP[state.currentMode] || POWER_MAP.cool;
+  const kw = modeMap[state.fanSpeed] || modeMap[0];
+  const amps = (kw * 1000 / 230).toFixed(1);
+  const centsPerHr = Math.round(kw * TARIFF * 100);
+  kwEl.textContent  = kw.toFixed(2);
+  ampEl.textContent = amps;
+  costEl.textContent = centsPerHr;
+  kwEl.style.color = kw > 3.5 ? 'var(--danger)' : kw > 2.5 ? 'var(--warn)' : 'var(--success)';
+}
+
+// -- UI UPDATE --
 function updateControlUI() {
   const pb = document.getElementById('power-btn');
   pb.className = 'power-btn' + (state.powerOn ? ' on' : '');
@@ -664,6 +714,7 @@ function updateControlUI() {
   rt.className = 'temp-value ' + (state.currentMode === 'heat' ? 'heat-color' : 'cool-color');
   document.getElementById('disp-outside').textContent = state.humidity != null ? state.humidity + '%' : '--';
   document.getElementById('disp-set-temp').textContent = state.setTemp;
+  updatePowerUI();
   const zl = document.getElementById('zone-list');
   if (!state.zones.length) { zl.innerHTML = '<div style="color:var(--muted);font-size:13px">No zones detected</div>'; return; }
   zl.innerHTML = state.zones.map((z, i) =>
