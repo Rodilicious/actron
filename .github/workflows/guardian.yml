@@ -2,8 +2,8 @@ name: Actron Temperature Guardian
 
 on:
   schedule:
-    - cron: '*/15 * * * *'  # Every 15 minutes
-  workflow_dispatch:          # Allow manual trigger from GitHub Actions tab
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
 
 jobs:
   guardian:
@@ -49,6 +49,16 @@ jobs:
             const TUYA_BASE   = 'https://openapi.tuyaeu.com';
             const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
             const JSONBIN_HDR = { 'Content-Type': 'application/json', 'X-Access-Key': BIN_KEY };
+
+            // Power map: kW by mode and fan speed
+            // SRD151C-0500: 4.29kW input, 230V
+            const POWER_MAP = {
+              2: { 0: 3.2, 1: 2.1, 2: 3.2, 3: 4.29 }, // cool
+              3: { 0: 2.8, 1: 1.8, 2: 2.8, 3: 3.8  }, // heat
+              4: { 0: 0.3, 1: 0.2, 2: 0.3, 3: 0.4  }, // fan
+              1: { 0: 3.2, 1: 2.1, 2: 3.2, 3: 4.29 }, // auto
+            };
+            const POLL_HRS = 15 / 60; // 15 minute intervals = 0.25 hours
 
             // ── JSONBIN ──
             async function loadBin() {
@@ -116,17 +126,13 @@ jobs:
                 const data = await resp.json();
                 if (!data.success) throw new Error('Tuya: ' + JSON.stringify(data));
                 const props = data.result?.properties;
-                if (!props) throw new Error('No properties: ' + JSON.stringify(data.result));
+                if (!props) throw new Error('No properties');
                 const temp = props.find(p => p.code === 'temp_current');
                 const hum  = props.find(p => p.code === 'humidity_value');
-                return {
-                  temp:     temp ? temp.value / 10 : null,
-                  humidity: hum  ? hum.value       : null,
-                  time:     Date.now()
-                };
+                return { temp: temp ? temp.value / 10 : null, humidity: hum ? hum.value : null, time: Date.now() };
               } catch(e) {
                 console.log('Tuya error:', e.message);
-                return { temp: null, humidity: null, time: Date.now(), error: e.message };
+                return { temp: null, humidity: null, time: Date.now() };
               }
             }
 
@@ -149,11 +155,29 @@ jobs:
 
             // ── MAIN ──
             const now = Date.now();
+            const todayStr = new Date().toLocaleDateString('en-AU', { timeZone: 'Australia/Sydney' }).split('/').reverse().join('-');
+            const monthStr = todayStr.slice(0, 7);
 
             let bin;
             try { bin = await loadBin(); } catch(e) { bin = {}; console.log('JSONBin load failed:', e.message); }
-            let overrideFirstSeen = bin.overrideFirstSeen || null;
 
+            let overrideFirstSeen = bin.overrideFirstSeen || null;
+            let cost = bin.cost || { todayKwh: 0, monthKwh: 0, totalKwh: 0, lastDay: null, lastMonth: null, history: {} };
+
+            // Auto-reset on new day/month
+            if (cost.lastDay && cost.lastDay !== todayStr) {
+              if (cost.lastDay) cost.history[cost.lastDay] = cost.todayKwh;
+              const keys = Object.keys(cost.history).sort();
+              if (keys.length > 7) delete cost.history[keys[0]];
+              cost.todayKwh = 0;
+            }
+            if (cost.lastMonth && cost.lastMonth !== monthStr) {
+              cost.monthKwh = 0;
+            }
+            cost.lastDay   = todayStr;
+            cost.lastMonth = monthStr;
+
+            // Fetch AC status and Tuya temp in parallel
             const [da, tuya] = await Promise.all([
               getActronStatus().catch(e => { console.log('Actron poll failed:', e.message); return null; }),
               tuyaGetTemperature()
@@ -163,8 +187,23 @@ jobs:
 
             const setTemp = da.tempTarget;
             const powerOn = da.amOn;
-            console.log(`Actron: power=${powerOn}, setTemp=${setTemp}C | Tuya: temp=${tuya.temp}C, humidity=${tuya.humidity}%`);
+            const mode    = da.mode || 2;
+            const fanSpeed = da.fanSpeed || 0;
 
+            console.log(`Actron: power=${powerOn}, setTemp=${setTemp}C, mode=${mode}, fan=${fanSpeed} | Tuya: temp=${tuya.temp}C, humidity=${tuya.humidity}%`);
+
+            // ── COST TRACKING ──
+            if (powerOn) {
+              const modeMap = POWER_MAP[mode] || POWER_MAP[2];
+              const kw = modeMap[fanSpeed] || modeMap[0];
+              const kwh = kw * POLL_HRS;
+              cost.todayKwh  += kwh;
+              cost.monthKwh  += kwh;
+              cost.totalKwh  += kwh;
+              console.log(`Cost: +${kwh.toFixed(4)} kWh (${kw}kW x ${POLL_HRS}h) | today=${cost.todayKwh.toFixed(3)}, month=${cost.monthKwh.toFixed(3)}, total=${cost.totalKwh.toFixed(3)}`);
+            }
+
+            // ── GUARDIAN LOGIC ──
             let guardianResult;
             if (!powerOn) {
               overrideFirstSeen = null;
@@ -197,12 +236,14 @@ jobs:
               }
             }
 
+            // Save everything to JSONBin
             try {
               await saveBin({
                 overrideFirstSeen,
-                sensor: { temp: tuya.temp, humidity: tuya.humidity, updatedAt: now }
+                sensor: { temp: tuya.temp, humidity: tuya.humidity, updatedAt: now },
+                cost
               });
               console.log('JSONBin updated.');
             } catch(e) { console.log('JSONBin save failed:', e.message); }
 
-            console.log('Guardian result:', guardianResult);
+            console.log('Guardian:', guardianResult);
