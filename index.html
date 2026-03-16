@@ -265,7 +265,7 @@ body {
           </div>
           <div class="power-stat">
             <div class="power-stat-value" id="disp-cost" style="color:var(--success)">--</div>
-            <div class="power-stat-label">c/hr</div>
+            <div class="power-stat-label">$/hr</div>
           </div>
         </div>
         <div style="font-size:10px;color:var(--muted);margin-top:8px;text-align:center">Estimate based on rated specs · 35c/kWh Sydney rate</div>
@@ -691,7 +691,7 @@ function updatePowerUI() {
   const modeMap = POWER_MAP[state.currentMode] || POWER_MAP.cool;
   const kw = modeMap[state.fanSpeed] || modeMap[0];
   const amps = (kw * 1000 / 230).toFixed(1);
-  const centsPerHr = Math.round(kw * TARIFF * 100);
+  const centsPerHr = (kw * TARIFF).toFixed(2);
   kwEl.textContent  = kw.toFixed(2);
   ampEl.textContent = amps;
   costEl.textContent = centsPerHr;
