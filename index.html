@@ -672,7 +672,17 @@ window.getSensorReadings = async function() {
     });
     if (!resp.ok) throw new Error('JSONBin HTTP ' + resp.status);
     const data = await resp.json();
-    return data.record?.sensor || { temp: null, humidity: null };
+    const record = data.record || {};
+    if (record.cost) {
+      state.costTracker.todayKwh  = record.cost.todayKwh  || 0;
+      state.costTracker.monthKwh  = record.cost.monthKwh  || 0;
+      state.costTracker.totalKwh  = record.cost.totalKwh  || 0;
+      state.costTracker.history   = record.cost.history   || {};
+      state.costTracker.lastDay   = record.cost.lastDay   || null;
+      state.costTracker.lastMonth = record.cost.lastMonth || null;
+      updateCostUI();
+    }
+    return record.sensor || { temp: null, humidity: null };
   } catch(e) {
     console.error('Sensor read error:', e.message);
     return { temp: null, humidity: null };
