@@ -641,30 +641,13 @@ window.getSensorReadings = async function() {
       updateCostUI();
     }
     // Sync guardian settings from cloud
-    console.log('JSONBin settings:', JSON.stringify(record.settings));
     if (record.settings) {
-      if (record.settings.guardianThreshold) {
-        state.guardianThreshold = record.settings.guardianThreshold;
-        document.getElementById('g-threshold').value = record.settings.guardianThreshold;
-      }
-      if (record.settings.gracePeriodMin) {
-        state.gracePeriodMin = record.settings.gracePeriodMin;
-        document.getElementById('g-grace').value = record.settings.gracePeriodMin;
-      }
-      if (record.settings.guardianMode) {
-        console.log('Setting guardian mode to:', record.settings.guardianMode);
-        setGuardianMode(record.settings.guardianMode);
-      }
-      if (record.settings.scheduleFrom) {
-        state.scheduleFrom = record.settings.scheduleFrom;
-        document.getElementById('g-from').value = record.settings.scheduleFrom;
-      }
-      if (record.settings.scheduleTo) {
-        state.scheduleTo = record.settings.scheduleTo;
-        document.getElementById('g-to').value = record.settings.scheduleTo;
-      }
-    } else {
-      console.log('No settings found in JSONBin record');
+      const s = record.settings;
+      if (s.guardianThreshold) { state.guardianThreshold = s.guardianThreshold; const el = document.getElementById('g-threshold'); if(el) el.value = s.guardianThreshold; }
+      if (s.gracePeriodMin)    { state.gracePeriodMin    = s.gracePeriodMin;    const el = document.getElementById('g-grace');     if(el) el.value = s.gracePeriodMin; }
+      if (s.guardianMode)      { setGuardianMode(s.guardianMode); }
+      if (s.scheduleFrom)      { state.scheduleFrom      = s.scheduleFrom;      const el = document.getElementById('g-from');      if(el) el.value = s.scheduleFrom; }
+      if (s.scheduleTo)        { state.scheduleTo        = s.scheduleTo;        const el = document.getElementById('g-to');        if(el) el.value = s.scheduleTo; }
     }
     // Update cloud guardian status banner
     updateCloudGuardianBanner(record);
