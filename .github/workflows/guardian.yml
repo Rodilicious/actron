@@ -166,6 +166,7 @@ jobs:
             const GRACE_MS  = (bin.settings?.gracePeriodMin || GRACE_MIN_DEFAULT) * 60 * 1000;
             console.log('Using threshold: ' + THRESHOLD + 'C, grace: ' + (GRACE_MS/60000) + 'min (from ' + (bin.settings?.guardianThreshold ? 'JSONBin' : 'defaults') + ')');
             let overrideFirstSeen = bin.overrideFirstSeen || null;
+            let overrideTemp = bin.overrideTemp || null;
             let cost = bin.cost || { todayKwh: 0, monthKwh: 0, totalKwh: 0, lastDay: null, lastMonth: null, history: {} };
 
             // Auto-reset on new day/month
@@ -215,6 +216,7 @@ jobs:
             } else if (setTemp < THRESHOLD) {
               if (!overrideFirstSeen) {
                 overrideFirstSeen = now;
+                overrideTemp = setTemp;
                 guardianResult = `Override detected: ${setTemp}C. Grace period started.`;
                 console.log(guardianResult);
               } else {
@@ -227,12 +229,14 @@ jobs:
                   try { await sendActronCommand({ amOn: false }); acOff = true; console.log('AC turned off.'); } catch(e) { console.log('AC off failed:', e.message); }
                   try { await sendEmail(setTemp, acOff ? 'The A/C has been turned off by Guardian.' : 'Guardian tried to turn A/C off but failed.'); emailSent = true; console.log('Alert email sent.'); } catch(e) { console.log('Email failed:', e.message); }
                   overrideFirstSeen = null;
+                  overrideTemp = null;
                   guardianResult = `Acted: AC off=${acOff}, email=${emailSent}`;
                 }
               }
             } else {
               if (overrideFirstSeen) {
                 overrideFirstSeen = null;
+                overrideTemp = null;
                 guardianResult = `Override corrected: ${setTemp}C`;
                 console.log(guardianResult);
               } else {
@@ -244,6 +248,7 @@ jobs:
             try {
               await saveBin({
                 overrideFirstSeen,
+                overrideTemp,
                 sensor: { temp: tuya.temp, humidity: tuya.humidity, updatedAt: now },
                 cost
               });
