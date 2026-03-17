@@ -2,7 +2,7 @@ name: Actron Temperature Guardian
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '*/15 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -58,7 +58,7 @@ jobs:
               4: { 0: 0.3, 1: 0.2, 2: 0.3, 3: 0.4  }, // fan
               1: { 0: 3.2, 1: 2.1, 2: 3.2, 3: 4.29 }, // auto
             };
-            const POLL_HRS = 15 / 60; // 15 minute intervals = 0.25 hours
+            const POLL_HRS = 5 / 60; // 5 minute intervals
 
             // ── JSONBIN ──
             async function loadBin() {
@@ -221,7 +221,7 @@ jobs:
                 console.log(guardianResult);
               } else {
                 const remaining = GRACE_MS - (now - overrideFirstSeen);
-                if (remaining > 0) {
+                if (remaining > 30000) {
                   guardianResult = `Override persists. ${Math.round(remaining/60000)} min remaining.`;
                   console.log(guardianResult);
                 } else {
@@ -250,7 +250,8 @@ jobs:
                 overrideFirstSeen,
                 overrideTemp,
                 sensor: { temp: tuya.temp, humidity: tuya.humidity, updatedAt: now },
-                cost
+                cost,
+                settings: bin.settings || {}
               });
               console.log('JSONBin updated.');
             } catch(e) { console.log('JSONBin save failed:', e.message); }
