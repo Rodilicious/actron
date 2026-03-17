@@ -641,6 +641,7 @@ window.getSensorReadings = async function() {
       updateCostUI();
     }
     // Sync guardian settings from cloud
+    console.log('JSONBin settings:', JSON.stringify(record.settings));
     if (record.settings) {
       if (record.settings.guardianThreshold) {
         state.guardianThreshold = record.settings.guardianThreshold;
@@ -651,6 +652,7 @@ window.getSensorReadings = async function() {
         document.getElementById('g-grace').value = record.settings.gracePeriodMin;
       }
       if (record.settings.guardianMode) {
+        console.log('Setting guardian mode to:', record.settings.guardianMode);
         setGuardianMode(record.settings.guardianMode);
       }
       if (record.settings.scheduleFrom) {
@@ -661,6 +663,8 @@ window.getSensorReadings = async function() {
         state.scheduleTo = record.settings.scheduleTo;
         document.getElementById('g-to').value = record.settings.scheduleTo;
       }
+    } else {
+      console.log('No settings found in JSONBin record');
     }
     // Update cloud guardian status banner
     updateCloudGuardianBanner(record);
