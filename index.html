@@ -206,6 +206,12 @@ body {
     </div>
     <div class="scroll-area">
       <div class="wake-warning" id="wake-warning">⚠️ Keep this app open for Guardian monitoring to stay active.</div>
+      <div id="cloud-guardian-banner" style="display:none;background:rgba(248,81,73,0.08);border:0.5px solid rgba(248,81,73,0.4);border-radius:8px;padding:10px 12px;margin-bottom:0.75rem;font-size:12px;color:var(--danger);line-height:1.5;">
+        🚨 <strong>Cloud Guardian Alert</strong> — Set temp overridden to <span id="cg-override-temp">--</span>°C (threshold: <span id="cg-threshold">--</span>°C). A/C will be turned off in <span id="cg-countdown">--</span> min.
+      </div>
+      <div id="cloud-guardian-ok" style="display:none;background:rgba(63,185,80,0.08);border:0.5px solid rgba(63,185,80,0.3);border-radius:8px;padding:10px 12px;margin-bottom:0.75rem;font-size:12px;color:var(--success);line-height:1.5;">
+        ✅ <strong>Cloud Guardian</strong> — Watching. Set temp OK.
+      </div>
       <div class="card">
         <div class="card-label">System Power</div>
         <div style="margin-bottom:1rem">
@@ -592,6 +598,8 @@ window.getSensorReadings = async function() {
       state.costTracker.lastMonth = record.cost.lastMonth || null;
       updateCostUI();
     }
+    // Update cloud guardian status banner
+    updateCloudGuardianBanner(record);
     return record.sensor || { temp: null, humidity: null };
   } catch(e) {
     console.error('Sensor read error:', e.message);
@@ -754,6 +762,28 @@ async function syncGuardianSettingsToCloud() {
     addLog('Guardian settings synced to cloud', 'ok');
   } catch(e) {
     addLog('Cloud sync failed: ' + e.message, 'warn');
+  }
+}
+
+// ── CLOUD GUARDIAN BANNER ──
+function updateCloudGuardianBanner(record) {
+  const banner = document.getElementById('cloud-guardian-banner');
+  const okBanner = document.getElementById('cloud-guardian-ok');
+  if (!banner || !okBanner) return;
+  const overrideFirstSeen = record.overrideFirstSeen || null;
+  const threshold = (record.settings && record.settings.guardianThreshold) || state.guardianThreshold || 22;
+  const graceMins = (record.settings && record.settings.gracePeriodMin) || state.gracePeriodMin || 10;
+  if (overrideFirstSeen) {
+    const elapsed = (Date.now() - overrideFirstSeen) / 60000;
+    const remaining = Math.max(0, graceMins - elapsed);
+    document.getElementById('cg-override-temp').textContent = record.overrideTemp || '--';
+    document.getElementById('cg-threshold').textContent = threshold;
+    document.getElementById('cg-countdown').textContent = remaining < 1 ? 'less than 1' : Math.ceil(remaining).toString();
+    banner.style.display = 'block';
+    okBanner.style.display = 'none';
+  } else {
+    banner.style.display = 'none';
+    okBanner.style.display = 'block';
   }
 }
 
