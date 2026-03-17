@@ -182,14 +182,12 @@ body {
       </div>
     </div>
     <div class="scroll-area">
-      <!-- Cloud Guardian Alert Banner -->
       <div id="cloud-guardian-banner" style="display:none;background:rgba(248,81,73,0.08);border:0.5px solid rgba(248,81,73,0.4);border-radius:8px;padding:10px 12px;margin-bottom:0.75rem;font-size:12px;color:var(--danger);line-height:1.5;text-align:center;">
         🚨 <strong>Cloud Guardian Alert</strong><br>
         Set temp overridden to <span id="cg-override-temp">--</span>°C (threshold: <span id="cg-threshold">--</span>°C)<br>
         <div style="font-size:36px;font-weight:300;letter-spacing:-2px;margin:6px 0;color:var(--danger)" id="cg-countdown">--:--</div>
         <div style="font-size:11px;color:var(--muted)">until A/C turns off</div>
       </div>
-      <!-- Cloud Guardian OK Banner -->
       <div id="cloud-guardian-ok" style="display:none;background:rgba(63,185,80,0.08);border:0.5px solid rgba(63,185,80,0.3);border-radius:8px;padding:10px 12px;margin-bottom:0.75rem;font-size:12px;color:var(--success);line-height:1.5;">
         ✅ <strong>Cloud Guardian</strong> — Watching. Set temp OK.
       </div>
@@ -250,65 +248,61 @@ body {
       <span class="badge badge-on">Active</span>
     </div>
     <div class="scroll-area">
-      <div class="guardian-card" id="guardian-card">
+      <div class="guardian-card">
         <div class="guardian-header">
           <div class="guardian-title">🛡️ Cloud Guardian Active</div>
           <span class="badge badge-on">24/7</span>
         </div>
         <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:0.75rem">
-          The Guardian runs in the cloud every 5 minutes — no need to keep this app open. If the set temperature drops below your threshold, it will turn the A/C off automatically.
+          The Guardian runs in the cloud every 5 minutes. All settings are stored centrally and sync across all devices automatically.
         </div>
-        <!-- Guardian Mode -->
         <div class="setting-row" style="padding:8px 0">
           <div>
             <div class="setting-label">Guardian mode</div>
             <div class="setting-sub">When should Guardian be active</div>
           </div>
           <div style="display:flex;gap:6px">
-            <button class="mode-pill" id="gmode-off" onclick="setGuardianMode('off')" style="padding:6px 10px;font-size:11px">Off</button>
+            <button class="mode-pill" id="gmode-off"       onclick="setGuardianMode('off')"       style="padding:6px 10px;font-size:11px">Off</button>
             <button class="mode-pill" id="gmode-scheduled" onclick="setGuardianMode('scheduled')" style="padding:6px 10px;font-size:11px">Scheduled</button>
-            <button class="mode-pill" id="gmode-always" onclick="setGuardianMode('always')" style="padding:6px 10px;font-size:11px">Always On</button>
+            <button class="mode-pill" id="gmode-always"    onclick="setGuardianMode('always')"    style="padding:6px 10px;font-size:11px">Always On</button>
           </div>
         </div>
-        <!-- Schedule rows - only shown when Scheduled mode selected -->
         <div id="schedule-rows">
           <div class="setting-row" style="padding:8px 0">
-            <div>
-              <div class="setting-label">Active from</div>
-              <div class="setting-sub">Guardian starts at this time</div>
-            </div>
+            <div><div class="setting-label">Active from</div><div class="setting-sub">Guardian starts at this time</div></div>
             <input class="setting-input" id="g-from" type="time" value="22:00" style="width:100px;text-align:center">
           </div>
           <div class="setting-row" style="padding:8px 0">
-            <div>
-              <div class="setting-label">Active until</div>
-              <div class="setting-sub">Guardian stops at this time</div>
-            </div>
+            <div><div class="setting-label">Active until</div><div class="setting-sub">Guardian stops at this time</div></div>
             <input class="setting-input" id="g-to" type="time" value="06:00" style="width:100px;text-align:center">
           </div>
         </div>
-        <!-- Threshold -->
         <div class="setting-row" style="padding:8px 0">
-          <div>
-            <div class="setting-label">Min allowed set temp</div>
-            <div class="setting-sub">Cloud Guardian acts if set below this</div>
-          </div>
+          <div><div class="setting-label">Min allowed set temp</div><div class="setting-sub">Cloud Guardian acts if set below this</div></div>
           <div style="display:flex;align-items:center;gap:4px">
             <input class="setting-input" id="g-threshold" type="number" min="16" max="30" value="22">
             <span style="color:var(--muted);font-size:14px">°C</span>
           </div>
         </div>
-        <!-- Grace period -->
-        <div class="setting-row" style="padding:8px 0;border-bottom:none">
-          <div>
-            <div class="setting-label">Grace period</div>
-            <div class="setting-sub">Wait before acting (synced to cloud)</div>
-          </div>
+        <div class="setting-row" style="padding:8px 0">
+          <div><div class="setting-label">Grace period</div><div class="setting-sub">Wait before acting</div></div>
           <div style="display:flex;align-items:center;gap:4px">
             <input class="setting-input" id="g-grace" type="number" min="1" max="60" value="10">
             <span style="color:var(--muted);font-size:14px">min</span>
           </div>
         </div>
+        <div class="setting-row" style="padding:8px 0">
+          <div><div class="setting-label">Electricity tariff</div><div class="setting-sub">Rate per kWh</div></div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <span style="color:var(--muted);font-size:14px">$</span>
+            <input class="setting-input" id="g-tariff" type="number" min="0.1" max="1.0" step="0.01" value="0.35" style="width:70px">
+            <span style="color:var(--muted);font-size:14px">/kWh</span>
+          </div>
+        </div>
+        <div class="setting-row" style="padding:8px 0;border-bottom:none">
+          <div><div class="setting-label">Zone names</div><div class="setting-sub">Tap a zone name to edit</div></div>
+        </div>
+        <div id="guardian-zone-names" style="margin-top:4px"></div>
       </div>
 
       <!-- EmailJS config -->
@@ -322,7 +316,7 @@ body {
           <div class="setting-label">Template ID</div>
           <input class="setting-input" id="ejs-template" type="text" placeholder="template_xxx" style="width:150px;text-align:left;font-size:13px">
         </div>
-        <div class="setting-row" style="padding:8px 0">
+        <div class="setting-row" style="padding:8px 0;border-bottom:none">
           <div class="setting-label">Public Key</div>
           <input class="setting-input" id="ejs-pubkey" type="text" placeholder="your_public_key" style="width:150px;text-align:left;font-size:13px">
         </div>
@@ -352,74 +346,32 @@ body {
       <div class="card">
         <div class="card-label">Current Power Usage</div>
         <div class="power-grid">
-          <div class="power-stat">
-            <div class="power-stat-value" id="disp-kw2" style="color:var(--warn)">--</div>
-            <div class="power-stat-label">kW</div>
-          </div>
-          <div class="power-stat">
-            <div class="power-stat-value" id="disp-amps2" style="color:var(--accent)">--</div>
-            <div class="power-stat-label">Amps</div>
-          </div>
-          <div class="power-stat">
-            <div class="power-stat-value" id="disp-cost2" style="color:var(--success)">--</div>
-            <div class="power-stat-label">$/hr</div>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-label">Electricity Tariff</div>
-        <div class="setting-row" style="border-bottom:none">
-          <div>
-            <div class="setting-label">Rate per kWh</div>
-            <div class="setting-sub">Check your electricity bill</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:4px">
-            <span style="color:var(--muted);font-size:14px">$</span>
-            <input class="setting-input" id="tariff-input" type="number" min="0.1" max="1.0" step="0.01" value="0.35" style="width:70px">
-            <span style="color:var(--muted);font-size:14px">/kWh</span>
-          </div>
+          <div class="power-stat"><div class="power-stat-value" id="disp-kw2" style="color:var(--warn)">--</div><div class="power-stat-label">kW</div></div>
+          <div class="power-stat"><div class="power-stat-value" id="disp-amps2" style="color:var(--accent)">--</div><div class="power-stat-label">Amps</div></div>
+          <div class="power-stat"><div class="power-stat-value" id="disp-cost2" style="color:var(--success)">--</div><div class="power-stat-label">$/hr</div></div>
         </div>
       </div>
       <div class="card">
         <div class="card-label">Running Costs</div>
-        <div class="setting-row">
-          <div class="setting-label">Today</div>
-          <div style="font-size:18px;font-weight:300;color:var(--success)" id="cost-today">$0.00</div>
-        </div>
-        <div class="setting-row">
-          <div class="setting-label">This month</div>
-          <div style="font-size:18px;font-weight:300;color:var(--warn)" id="cost-month">$0.00</div>
-        </div>
-        <div class="setting-row" style="border-bottom:none">
-          <div class="setting-label">Total tracked</div>
-          <div style="font-size:18px;font-weight:300;color:var(--muted)" id="cost-total">$0.00</div>
-        </div>
+        <div class="setting-row"><div class="setting-label">Today</div><div style="font-size:18px;font-weight:300;color:var(--success)" id="cost-today">$0.00</div></div>
+        <div class="setting-row"><div class="setting-label">This month</div><div style="font-size:18px;font-weight:300;color:var(--warn)" id="cost-month">$0.00</div></div>
+        <div class="setting-row" style="border-bottom:none"><div class="setting-label">Total tracked</div><div style="font-size:18px;font-weight:300;color:var(--muted)" id="cost-total">$0.00</div></div>
       </div>
       <div class="card">
         <div class="card-label">Run Time</div>
-        <div class="setting-row">
-          <div class="setting-label">Today</div>
-          <div style="font-size:15px;color:var(--text)" id="runtime-today">0h 0m</div>
-        </div>
-        <div class="setting-row" style="border-bottom:none">
-          <div class="setting-label">This month</div>
-          <div style="font-size:15px;color:var(--text)" id="runtime-month">0h 0m</div>
-        </div>
+        <div class="setting-row"><div class="setting-label">Today</div><div style="font-size:15px;color:var(--text)" id="runtime-today">0h 0m</div></div>
+        <div class="setting-row" style="border-bottom:none"><div class="setting-label">This month</div><div style="font-size:15px;color:var(--text)" id="runtime-month">0h 0m</div></div>
       </div>
       <div class="card">
         <div class="card-label">7-Day Cost History</div>
         <canvas id="cost-chart" height="160" style="width:100%"></canvas>
-        <div id="cost-chart-empty" style="text-align:center;color:var(--muted);font-size:13px;padding:2rem 0">
-          No history yet — costs will appear here as the app runs
-        </div>
+        <div id="cost-chart-empty" style="text-align:center;color:var(--muted);font-size:13px;padding:2rem 0">No history yet</div>
       </div>
       <div class="card">
         <div class="card-label">Actions</div>
         <button class="btn btn-secondary" id="btn-reset-today" style="margin-bottom:8px">Reset Today</button>
         <button class="btn btn-danger" id="btn-reset-all">Reset All Data</button>
-        <p style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5">
-          Costs are estimates based on rated specs. Monthly counter resets on the 1st of each month.
-        </p>
+        <p style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5">Costs are estimates based on rated specs.</p>
       </div>
     </div>
   </div>
@@ -431,10 +383,7 @@ body {
       <div class="card">
         <div class="card-label">Polling</div>
         <div class="setting-row" style="border-bottom:none">
-          <div>
-            <div class="setting-label">Poll interval</div>
-            <div class="setting-sub">How often to check the unit</div>
-          </div>
+          <div><div class="setting-label">Poll interval</div><div class="setting-sub">How often to check the unit</div></div>
           <div style="display:flex;align-items:center;gap:4px">
             <input class="setting-input" id="s-poll" type="number" min="1" max="60" value="5">
             <span style="color:var(--muted);font-size:14px">min</span>
@@ -443,31 +392,20 @@ body {
       </div>
       <div class="card">
         <div class="card-label">Connection</div>
-        <div class="setting-row">
-          <div class="setting-label">Device ID</div>
-          <div style="font-size:12px;color:var(--muted)" id="s-user-display"></div>
-        </div>
-        <div class="setting-row" style="border-bottom:none">
-          <div class="setting-label">Access Token</div>
-          <div style="font-size:12px;color:var(--muted)" id="s-key-display">••••</div>
-        </div>
+        <div class="setting-row"><div class="setting-label">Device ID</div><div style="font-size:12px;color:var(--muted)" id="s-user-display"></div></div>
+        <div class="setting-row" style="border-bottom:none"><div class="setting-label">Access Token</div><div style="font-size:12px;color:var(--muted)" id="s-key-display">••••</div></div>
       </div>
       <div class="card">
         <div class="card-label">Actions</div>
         <button class="btn btn-secondary" id="btn-poll-now" style="margin-bottom:8px">Poll Now</button>
         <button class="btn btn-danger" id="btn-logout">Sign Out</button>
       </div>
-      <div class="card" id="zone-names-card">
-        <div class="card-label">Zone Names</div>
-        <div id="zone-name-inputs">
-          <div style="font-size:13px;color:var(--muted)">Poll the unit first to see zones.</div>
-        </div>
-      </div>
       <div class="card">
         <div class="card-label">About</div>
         <div style="font-size:13px;color:var(--muted);line-height:1.7">
-          Actron Connect PWA v2.0<br>
+          Actron Connect PWA v3.0<br>
           Cloud Guardian runs every 5 minutes via GitHub Actions<br>
+          All settings stored centrally in JSONBin<br>
           Alert email: rod.crowder@opscentre.com
         </div>
       </div>
@@ -508,76 +446,122 @@ const MODE_MAP       = { 2:'cool', 3:'heat', 4:'fan', 1:'auto', cool:2, heat:3, 
 const JSONBIN_BIN_ID = '69b62255b7ec241ddc6c9152';
 const JSONBIN_KEY    = '$2a$10$GCz45pcvt.RNJavm03JyjOJDsYLhyB1ABsgeTWK7s21epV2Te.9hW';
 const POWER_MAP      = {
-  cool: { 0: 3.2, 1: 2.1, 2: 3.2, 3: 4.29 },
-  heat: { 0: 2.8, 1: 1.8, 2: 2.8, 3: 3.8  },
-  fan:  { 0: 0.3, 1: 0.2, 2: 0.3, 3: 0.4  },
-  auto: { 0: 3.2, 1: 2.1, 2: 3.2, 3: 4.29 },
+  cool: { 0:3.2, 1:2.1, 2:3.2, 3:4.29 },
+  heat: { 0:2.8, 1:1.8, 2:2.8, 3:3.8  },
+  fan:  { 0:0.3, 1:0.2, 2:0.3, 3:0.4  },
+  auto: { 0:3.2, 1:2.1, 2:3.2, 3:4.29 },
 };
 
-// ── STATE ──
+// ── STATE (runtime only — all persisted settings come from JSONBin) ──
 window.state = {
   auth: null, isDemo: false,
   powerOn: false, currentMode: 'cool', setTemp: 22, fanSpeed: 0,
   roomTemp: null, humidity: null, zones: [],
   pollInterval: 5, pollTimer: null,
-  zoneNames: {},
-  tariff: 0.35,
-  costTracker: { todayKwh: 0, monthKwh: 0, totalKwh: 0, lastMonth: null, lastDay: null, history: {} },
+  cgWasActive: false,
+  // Settings — loaded from JSONBin on first poll, defaults until then
   guardianThreshold: 22,
   gracePeriodMin: 10,
   guardianMode: 'scheduled',
   scheduleFrom: '22:00',
   scheduleTo: '06:00',
-  cgWasActive: false,
+  tariff: 0.35,
+  zoneNames: {},
+  ejsService: '', ejsTemplate: '', ejsPubkey: '',
+  costTracker: { todayKwh:0, monthKwh:0, totalKwh:0, lastMonth:null, lastDay:null, history:{} },
 };
 
-// ── PERSISTENCE ──
-function saveSettings() {
-  const ejsService  = document.getElementById('ejs-service');
-  const ejsTemplate = document.getElementById('ejs-template');
-  const ejsPubkey   = document.getElementById('ejs-pubkey');
-  localStorage.setItem('actron-settings', JSON.stringify({
-    pollInterval:      state.pollInterval,
-    guardianThreshold: state.guardianThreshold,
-    gracePeriodMin:    state.gracePeriodMin,
-    guardianMode:      state.guardianMode,
-    scheduleFrom:      state.scheduleFrom,
-    scheduleTo:        state.scheduleTo,
-    ejsService:        ejsService  ? ejsService.value  : '',
-    ejsTemplate:       ejsTemplate ? ejsTemplate.value : '',
-    ejsPubkey:         ejsPubkey   ? ejsPubkey.value   : '',
-    zoneNames:         state.zoneNames,
-  }));
-}
-
-function loadSettings() {
+// ── JSONBIN: single source of truth ──
+async function loadFromCloud() {
   try {
-    const s = JSON.parse(localStorage.getItem('actron-settings') || '{}');
-    if (s.pollInterval)      { state.pollInterval      = s.pollInterval;      const el = document.getElementById('s-poll');      if (el) el.value = s.pollInterval; }
-    if (s.guardianThreshold) { state.guardianThreshold = s.guardianThreshold; const el = document.getElementById('g-threshold'); if (el) el.value = s.guardianThreshold; }
-    if (s.gracePeriodMin)    { state.gracePeriodMin    = s.gracePeriodMin;    const el = document.getElementById('g-grace');     if (el) el.value = s.gracePeriodMin; }
-    if (s.scheduleFrom)      { state.scheduleFrom      = s.scheduleFrom;      const el = document.getElementById('g-from');      if (el) el.value = s.scheduleFrom; }
-    if (s.scheduleTo)        { state.scheduleTo        = s.scheduleTo;        const el = document.getElementById('g-to');        if (el) el.value = s.scheduleTo; }
-    if (s.guardianMode)      { setGuardianMode(s.guardianMode); }
-    if (s.ejsService)        { const el = document.getElementById('ejs-service');  if (el) el.value = s.ejsService; }
-    if (s.ejsTemplate)       { const el = document.getElementById('ejs-template'); if (el) el.value = s.ejsTemplate; }
-    if (s.ejsPubkey)         { const el = document.getElementById('ejs-pubkey');   if (el) el.value = s.ejsPubkey; }
-    if (s.zoneNames)         { state.zoneNames = s.zoneNames; renderZoneNameInputs(); }
-  } catch(e) {}
+    const resp = await fetch('https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID + '/latest', {
+      headers: { 'X-Access-Key': JSONBIN_KEY }
+    });
+    if (!resp.ok) throw new Error('JSONBin HTTP ' + resp.status);
+    const data   = await resp.json();
+    const record = data.record || {};
+
+    // Apply settings to state and UI
+    if (record.settings) {
+      const s = record.settings;
+      if (s.guardianThreshold != null) { state.guardianThreshold = s.guardianThreshold; setEl('g-threshold', s.guardianThreshold); }
+      if (s.gracePeriodMin    != null) { state.gracePeriodMin    = s.gracePeriodMin;    setEl('g-grace',     s.gracePeriodMin); }
+      if (s.scheduleFrom)              { state.scheduleFrom      = s.scheduleFrom;      setEl('g-from',      s.scheduleFrom); }
+      if (s.scheduleTo)                { state.scheduleTo        = s.scheduleTo;        setEl('g-to',        s.scheduleTo); }
+      if (s.tariff           != null)  { state.tariff            = s.tariff;            setEl('g-tariff',    s.tariff); }
+      if (s.zoneNames)                 { state.zoneNames         = s.zoneNames;         renderZoneNameInputs(); }
+      if (s.ejsService)                { state.ejsService        = s.ejsService;        setEl('ejs-service',  s.ejsService); }
+      if (s.ejsTemplate)               { state.ejsTemplate       = s.ejsTemplate;       setEl('ejs-template', s.ejsTemplate); }
+      if (s.ejsPubkey)                 { state.ejsPubkey         = s.ejsPubkey;         setEl('ejs-pubkey',   s.ejsPubkey); }
+      if (s.guardianMode)              { setGuardianMode(s.guardianMode, false); }
+    }
+
+    // Apply cost data
+    if (record.cost) {
+      state.costTracker.todayKwh  = record.cost.todayKwh  || 0;
+      state.costTracker.monthKwh  = record.cost.monthKwh  || 0;
+      state.costTracker.totalKwh  = record.cost.totalKwh  || 0;
+      state.costTracker.history   = record.cost.history   || {};
+      state.costTracker.lastDay   = record.cost.lastDay   || null;
+      state.costTracker.lastMonth = record.cost.lastMonth || null;
+      updateCostUI();
+    }
+
+    // Update cloud guardian banner
+    updateCloudGuardianBanner(record);
+
+    return record.sensor || { temp: null, humidity: null };
+  } catch(e) {
+    console.error('Cloud load error:', e.message);
+    return { temp: null, humidity: null };
+  }
 }
 
-function saveCostData() {
-  localStorage.setItem('actron-cost',   JSON.stringify(state.costTracker));
-  localStorage.setItem('actron-tariff', state.tariff.toString());
-}
-
-function loadCostData() {
+async function saveSettingsToCloud() {
   try {
-    const ct = JSON.parse(localStorage.getItem('actron-cost') || 'null');
-    if (ct) state.costTracker = ct;
-    const t = parseFloat(localStorage.getItem('actron-tariff'));
-    if (t) { state.tariff = t; const el = document.getElementById('tariff-input'); if (el) el.value = t; }
-  } catch(e) {}
+    // Read current record to preserve non-settings fields
+    const resp = await fetch('https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID + '/latest', {
+      headers: { 'X-Access-Key': JSONBIN_KEY }
+    });
+    if (!resp.ok) return;
+    const data   = await resp.json();
+    const record = data.record || {};
+    record.settings = {
+      guardianThreshold: state.guardianThreshold,
+      gracePeriodMin:    state.gracePeriodMin,
+      guardianMode:      state.guardianMode,
+      scheduleFrom:      state.scheduleFrom,
+      scheduleTo:        state.scheduleTo,
+      tariff:            state.tariff,
+      zoneNames:         state.zoneNames,
+      ejsService:        state.ejsService,
+      ejsTemplate:       state.ejsTemplate,
+      ejsPubkey:         state.ejsPubkey,
+    };
+    await fetch('https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Access-Key': JSONBIN_KEY },
+      body: JSON.stringify(record)
+    });
+    addLog('Settings saved to cloud', 'ok');
+  } catch(e) {
+    addLog('Cloud save failed: ' + e.message, 'warn');
+  }
+}
+
+// Helper to safely set element value
+function setEl(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.value = val;
+}
+
+// ── POLL INTERVAL stored in localStorage only (device preference) ──
+function savePollInterval() {
+  localStorage.setItem('actron-poll', state.pollInterval.toString());
+}
+function loadPollInterval() {
+  const v = parseInt(localStorage.getItem('actron-poll'));
+  if (v) { state.pollInterval = v; setEl('s-poll', v); }
 }
 
 // ── LOGGING ──
@@ -598,100 +582,33 @@ function renderLog() {
 // ── DEMO DATA ──
 let demoSetTemp = 24, demoPower = true, demoMode = 2;
 function getDemoData() {
-  return { data: { last_data: { DA: { amOn: demoPower, mode: demoMode, tempTarget: demoSetTemp, fanSpeed: 0, enabledZones: [1,0,1,0,0,1,0,0] }}}};
+  return { data: { last_data: { DA: { amOn:demoPower, mode:demoMode, tempTarget:demoSetTemp, fanSpeed:0, enabledZones:[1,0,1,0,0,1,0,0] }}}};
 }
 function applyDemoCommand(cmd) {
-  if (cmd.amOn      != null) demoPower   = cmd.amOn;
+  if (cmd.amOn       != null) demoPower   = cmd.amOn;
   if (cmd.tempTarget != null) demoSetTemp = cmd.tempTarget;
-  if (cmd.mode      != null) demoMode    = cmd.mode;
+  if (cmd.mode       != null) demoMode    = cmd.mode;
 }
 
 // ── ACTRON API ──
 async function actronGet() {
   if (state.isDemo) return getDemoData();
-  const url = `${ACTRON_API}/${state.auth.deviceId}?user_access_token=${state.auth.token}`;
-  const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
-  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  const resp = await fetch(ACTRON_API + '/' + state.auth.deviceId + '?user_access_token=' + state.auth.token, {
+    headers: { 'Accept': 'application/json' }
+  });
+  if (!resp.ok) throw new Error('HTTP ' + resp.status);
   return resp.json();
 }
 async function actronCommand(cmd) {
   if (state.isDemo) { applyDemoCommand(cmd); return; }
-  await fetch(`${ACTRON_API}/${state.auth.deviceId}?user_access_token=${state.auth.token}`, {
+  await fetch(ACTRON_API + '/' + state.auth.deviceId + '?user_access_token=' + state.auth.token, {
     method: 'PUT',
-    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'Origin': 'https://actronair.com.au' },
+    headers: { 'Accept':'application/json', 'Content-Type':'application/json', 'Origin':'https://actronair.com.au' },
     body: JSON.stringify({ DA: cmd })
   });
 }
 
-// ── JSONBIN / SENSOR ──
-window.getSensorReadings = async function() {
-  if (state.isDemo) return { temp: 23.5, humidity: 58 };
-  try {
-    const resp = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
-      headers: { 'X-Access-Key': JSONBIN_KEY }
-    });
-    if (!resp.ok) throw new Error('JSONBin HTTP ' + resp.status);
-    const data   = await resp.json();
-    const record = data.record || {};
-
-    // Load cost data from cloud
-    if (record.cost) {
-      state.costTracker.todayKwh  = record.cost.todayKwh  || 0;
-      state.costTracker.monthKwh  = record.cost.monthKwh  || 0;
-      state.costTracker.totalKwh  = record.cost.totalKwh  || 0;
-      state.costTracker.history   = record.cost.history   || {};
-      state.costTracker.lastDay   = record.cost.lastDay   || null;
-      state.costTracker.lastMonth = record.cost.lastMonth || null;
-      updateCostUI();
-    }
-
-    // Sync guardian settings from cloud (one-way: cloud → app)
-    if (record.settings) {
-      const s = record.settings;
-      if (s.guardianThreshold != null) { state.guardianThreshold = s.guardianThreshold; const el = document.getElementById('g-threshold'); if (el) el.value = s.guardianThreshold; }
-      if (s.gracePeriodMin    != null) { state.gracePeriodMin    = s.gracePeriodMin;    const el = document.getElementById('g-grace');     if (el) el.value = s.gracePeriodMin; }
-      if (s.scheduleFrom)              { state.scheduleFrom      = s.scheduleFrom;      const el = document.getElementById('g-from');      if (el) el.value = s.scheduleFrom; }
-      if (s.scheduleTo)                { state.scheduleTo        = s.scheduleTo;        const el = document.getElementById('g-to');        if (el) el.value = s.scheduleTo; }
-      if (s.guardianMode)              { setGuardianMode(s.guardianMode, false); } // false = don't sync back to cloud
-    }
-
-    // Update cloud guardian banner
-    updateCloudGuardianBanner(record);
-
-    return record.sensor || { temp: null, humidity: null };
-  } catch(e) {
-    console.error('Sensor read error:', e.message);
-    return { temp: null, humidity: null };
-  }
-};
-
-// ── SYNC GUARDIAN SETTINGS TO CLOUD ──
-async function syncGuardianSettingsToCloud() {
-  try {
-    const resp = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, { headers: { 'X-Access-Key': JSONBIN_KEY } });
-    if (!resp.ok) return;
-    const data   = await resp.json();
-    const record = data.record || {};
-    record.settings = {
-      guardianThreshold: state.guardianThreshold,
-      gracePeriodMin:    state.gracePeriodMin,
-      guardianMode:      state.guardianMode,
-      scheduleFrom:      state.scheduleFrom,
-      scheduleTo:        state.scheduleTo,
-    };
-    await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'X-Access-Key': JSONBIN_KEY },
-      body: JSON.stringify(record)
-    });
-    addLog('Guardian settings synced to cloud', 'ok');
-  } catch(e) {
-    addLog('Cloud sync failed: ' + e.message, 'warn');
-  }
-}
-
 // ── GUARDIAN MODE ──
-// syncToCloud param prevents infinite loop when reading settings back from cloud
 window.setGuardianMode = function(mode, syncToCloud = true) {
   state.guardianMode = mode;
   ['off','scheduled','always'].forEach(m => {
@@ -701,9 +618,8 @@ window.setGuardianMode = function(mode, syncToCloud = true) {
   const schedRows = document.getElementById('schedule-rows');
   if (schedRows) schedRows.style.display = mode === 'scheduled' ? 'block' : 'none';
   if (syncToCloud) {
-    saveSettings();
-    syncGuardianSettingsToCloud();
-    addLog('Guardian mode set to ' + mode, 'info');
+    saveSettingsToCloud();
+    addLog('Guardian mode → ' + mode, 'info');
   }
 };
 
@@ -715,17 +631,13 @@ function updateCloudGuardianBanner(record) {
   const banner   = document.getElementById('cloud-guardian-banner');
   const okBanner = document.getElementById('cloud-guardian-ok');
   if (!banner || !okBanner) return;
-
   const overrideFirstSeen = record.overrideFirstSeen || null;
   const threshold = (record.settings && record.settings.guardianThreshold) || state.guardianThreshold || 22;
   const graceMins = (record.settings && record.settings.gracePeriodMin)    || state.gracePeriodMin    || 10;
-
   if (overrideFirstSeen) {
     cgDeadline = overrideFirstSeen + (graceMins * 60 * 1000);
-    const otEl = document.getElementById('cg-override-temp');
-    const thEl = document.getElementById('cg-threshold');
-    if (otEl) otEl.textContent = record.overrideTemp || '--';
-    if (thEl) thEl.textContent = threshold;
+    setElText('cg-override-temp', record.overrideTemp || '--');
+    setElText('cg-threshold', threshold);
     banner.style.display   = 'block';
     okBanner.style.display = 'none';
     startCgCountdown();
@@ -742,19 +654,19 @@ function updateCloudGuardianBanner(record) {
   }
 }
 
+function setElText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+
 function startCgCountdown() {
   clearInterval(cgCountdownTimer);
   tickCgCountdown();
   cgCountdownTimer = setInterval(tickCgCountdown, 1000);
 }
-
 function tickCgCountdown() {
   const el = document.getElementById('cg-countdown');
   if (!el || !cgDeadline) return;
   const rem = cgDeadline - Date.now();
   if (rem <= 0) { el.textContent = '00:00'; clearInterval(cgCountdownTimer); return; }
-  const m = Math.floor(rem / 60000);
-  const s = Math.floor((rem % 60000) / 1000);
+  const m = Math.floor(rem / 60000), s = Math.floor((rem % 60000) / 1000);
   el.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
 }
 
@@ -763,87 +675,62 @@ function getCurrentKw() {
   if (!state.powerOn) return 0;
   return (POWER_MAP[state.currentMode] || POWER_MAP.cool)[state.fanSpeed] || 0;
 }
-
 function updateCostUI() {
-  const ct  = state.costTracker;
-  const t   = state.tariff;
-  const kw  = getCurrentKw();
-
-  const kw2   = document.getElementById('disp-kw2');
-  const amp2  = document.getElementById('disp-amps2');
-  const cost2 = document.getElementById('disp-cost2');
+  const ct = state.costTracker, t = state.tariff, kw = getCurrentKw();
+  const kw2 = document.getElementById('disp-kw2');
   if (kw2) {
-    kw2.textContent   = state.powerOn ? kw.toFixed(2) : '0.00';
-    amp2.textContent  = state.powerOn ? (kw * 1000 / 230).toFixed(1) : '0.0';
-    cost2.textContent = state.powerOn ? '$' + (kw * t).toFixed(2) : '$0.00';
-    kw2.style.color   = kw > 3.5 ? 'var(--danger)' : kw > 2.5 ? 'var(--warn)' : 'var(--muted)';
+    kw2.textContent = state.powerOn ? kw.toFixed(2) : '0.00';
+    document.getElementById('disp-amps2').textContent  = state.powerOn ? (kw*1000/230).toFixed(1) : '0.0';
+    document.getElementById('disp-cost2').textContent  = state.powerOn ? '$'+(kw*t).toFixed(2) : '$0.00';
+    kw2.style.color = kw > 3.5 ? 'var(--danger)' : kw > 2.5 ? 'var(--warn)' : 'var(--muted)';
   }
-
-  const todayEl   = document.getElementById('cost-today');
-  const monthEl   = document.getElementById('cost-month');
-  const totalEl   = document.getElementById('cost-total');
-  const rtTodayEl = document.getElementById('runtime-today');
-  const rtMonthEl = document.getElementById('runtime-month');
-  if (todayEl) {
-    todayEl.textContent = '$' + (ct.todayKwh * t).toFixed(2);
-    monthEl.textContent = '$' + (ct.monthKwh * t).toFixed(2);
-    totalEl.textContent = '$' + (ct.totalKwh * t).toFixed(2);
-    const kwBase = Math.max(getCurrentKw(), 0.3);
-    rtTodayEl.textContent = Math.floor(ct.todayKwh / kwBase) + 'h ' + Math.round(((ct.todayKwh / kwBase) % 1) * 60) + 'm';
-    rtMonthEl.textContent = Math.floor(ct.monthKwh / kwBase) + 'h ' + Math.round(((ct.monthKwh / kwBase) % 1) * 60) + 'm';
-  }
+  setElText('cost-today',    '$' + (ct.todayKwh * t).toFixed(2));
+  setElText('cost-month',    '$' + (ct.monthKwh * t).toFixed(2));
+  setElText('cost-total',    '$' + (ct.totalKwh * t).toFixed(2));
+  const kwBase = Math.max(kw, 0.3);
+  setElText('runtime-today', Math.floor(ct.todayKwh/kwBase) + 'h ' + Math.round(((ct.todayKwh/kwBase)%1)*60) + 'm');
+  setElText('runtime-month', Math.floor(ct.monthKwh/kwBase) + 'h ' + Math.round(((ct.monthKwh/kwBase)%1)*60) + 'm');
   renderCostChart();
 }
-
 function renderCostChart() {
   const canvas = document.getElementById('cost-chart');
   const empty  = document.getElementById('cost-chart-empty');
   if (!canvas) return;
-  const ct = state.costTracker;
-  const t  = state.tariff;
+  const ct = state.costTracker, t = state.tariff;
   const days = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
     const key = d.toISOString().slice(0,10);
-    const kwh = (key === ct.lastDay) ? ct.todayKwh : (ct.history[key] || 0);
-    days.push({ label: d.toLocaleDateString('en-AU', { weekday:'short' }), cost: kwh * t });
+    days.push({ label: d.toLocaleDateString('en-AU', { weekday:'short' }), cost: ((key===ct.lastDay?ct.todayKwh:(ct.history[key]||0))*t) });
   }
   const hasData = days.some(d => d.cost > 0);
   canvas.style.display = hasData ? 'block' : 'none';
   empty.style.display  = hasData ? 'none'  : 'block';
   if (!hasData) return;
-
-  const ctx = canvas.getContext('2d');
-  const W = canvas.offsetWidth || 300, H = 160;
+  const ctx = canvas.getContext('2d'), W = canvas.offsetWidth||300, H = 160;
   canvas.width = W; canvas.height = H;
   const maxCost = Math.max(...days.map(d => d.cost), 0.01);
   const pad = { top:20, right:10, bottom:30, left:40 };
-  const chartW = W - pad.left - pad.right;
-  const chartH = H - pad.top  - pad.bottom;
-  const barW   = Math.floor(chartW / 7) - 4;
-  ctx.clearRect(0, 0, W, H);
-  ctx.strokeStyle = 'rgba(255,255,255,0.07)'; ctx.lineWidth = 0.5;
-  for (let i = 0; i <= 4; i++) {
-    const y = pad.top + (chartH / 4) * i;
-    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
-    ctx.fillStyle = 'rgba(125,133,144,0.8)'; ctx.font = '9px sans-serif'; ctx.textAlign = 'right';
-    ctx.fillText('$' + (maxCost * (1 - i/4)).toFixed(2), pad.left - 4, y + 3);
+  const chartW = W-pad.left-pad.right, chartH = H-pad.top-pad.bottom;
+  const barW = Math.floor(chartW/7)-4;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='rgba(255,255,255,0.07)'; ctx.lineWidth=0.5;
+  for (let i=0;i<=4;i++) {
+    const y=pad.top+(chartH/4)*i;
+    ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(W-pad.right,y);ctx.stroke();
+    ctx.fillStyle='rgba(125,133,144,0.8)';ctx.font='9px sans-serif';ctx.textAlign='right';
+    ctx.fillText('$'+(maxCost*(1-i/4)).toFixed(2),pad.left-4,y+3);
   }
-  const today = new Date().toLocaleDateString('en-AU', { weekday:'short' });
-  days.forEach((d, i) => {
-    const x    = pad.left + i * (chartW / 7) + 2;
-    const barH = d.cost > 0 ? Math.max((d.cost / maxCost) * chartH, 2) : 0;
-    const y    = pad.top + chartH - barH;
-    const isToday = d.label === today;
-    ctx.fillStyle = isToday ? '#2f81f7' : d.cost > maxCost * 0.8 ? '#f85149' : '#3fb950';
-    ctx.beginPath(); ctx.roundRect(x, y, barW, barH, 3); ctx.fill();
-    if (d.cost > 0) {
-      ctx.fillStyle = 'rgba(230,237,243,0.9)'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText('$' + d.cost.toFixed(2), x + barW/2, y - 4);
-    }
-    ctx.fillStyle = isToday ? '#2f81f7' : 'rgba(125,133,144,0.8)';
-    ctx.font = isToday ? 'bold 10px sans-serif' : '10px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText(d.label, x + barW/2, H - 8);
+  const today = new Date().toLocaleDateString('en-AU',{weekday:'short'});
+  days.forEach((d,i) => {
+    const x=pad.left+i*(chartW/7)+2, barH=d.cost>0?Math.max((d.cost/maxCost)*chartH,2):0, y=pad.top+chartH-barH;
+    const isToday=d.label===today;
+    ctx.fillStyle=isToday?'#2f81f7':d.cost>maxCost*0.8?'#f85149':'#3fb950';
+    ctx.beginPath();ctx.roundRect(x,y,barW,barH,3);ctx.fill();
+    if(d.cost>0){ctx.fillStyle='rgba(230,237,243,0.9)';ctx.font='9px sans-serif';ctx.textAlign='center';ctx.fillText('$'+d.cost.toFixed(2),x+barW/2,y-4);}
+    ctx.fillStyle=isToday?'#2f81f7':'rgba(125,133,144,0.8)';
+    ctx.font=isToday?'bold 10px sans-serif':'10px sans-serif';ctx.textAlign='center';
+    ctx.fillText(d.label,x+barW/2,H-8);
   });
 }
 
@@ -857,33 +744,30 @@ async function poll() {
     state.currentMode = MODE_MAP[da.mode] ?? state.currentMode;
     state.fanSpeed    = da.fanSpeed ?? 0;
     state.setTemp     = da.tempTarget != null ? da.tempTarget : state.setTemp;
-    const tuya = await getSensorReadings();
-    state.roomTemp = tuya.temp;
-    state.humidity = tuya.humidity;
+    const sensor = await loadFromCloud();
+    state.roomTemp = sensor.temp;
+    state.humidity = sensor.humidity;
     if (Array.isArray(da.enabledZones)) {
-      state.zones = da.enabledZones.map((on, i) => ({ name: 'Zone ' + (i+1), amOn: on === 1 }));
+      state.zones = da.enabledZones.map((on, i) => ({ name:'Zone '+(i+1), amOn: on===1 }));
     } else {
       state.zones = da.zones ?? [];
     }
     setConnStatus('online');
     updateControlUI();
     renderZoneNameInputs();
-    const tempStr = state.roomTemp != null ? `, room ${state.roomTemp.toFixed(1)}°C` : '';
-    addLog(`Poll — set temp ${state.setTemp}°C, ${state.powerOn ? 'ON' : 'OFF'}, mode ${state.currentMode}${tempStr}`, 'ok');
-    document.getElementById('last-poll-time').textContent = new Date().toLocaleTimeString('en-AU');
+    const tempStr = state.roomTemp != null ? ', room ' + state.roomTemp.toFixed(1) + '°C' : '';
+    addLog('Poll — set temp ' + state.setTemp + '°C, ' + (state.powerOn?'ON':'OFF') + ', mode ' + state.currentMode + tempStr, 'ok');
+    setElText('last-poll-time', new Date().toLocaleTimeString('en-AU'));
   } catch(err) {
     setConnStatus('error');
-    addLog(`Poll failed: ${err.message}`, 'alert');
+    addLog('Poll failed: ' + err.message, 'alert');
   }
 }
-
 function setConnStatus(s) {
-  const dot   = document.getElementById('conn-dot');
-  const label = document.getElementById('conn-label-text');
-  if (dot)   dot.className   = 'status-dot' + (s === 'online' ? ' online' : s === 'error' ? ' error' : '');
-  if (label) label.textContent = s === 'online' ? 'Online' : s === 'error' ? 'Error' : 'Polling…';
+  const dot = document.getElementById('conn-dot'), lbl = document.getElementById('conn-label-text');
+  if (dot) dot.className = 'status-dot'+(s==='online'?' online':s==='error'?' error':'');
+  if (lbl) lbl.textContent = s==='online'?'Online':s==='error'?'Error':'Polling…';
 }
-
 function startPolling() {
   clearInterval(state.pollTimer);
   poll();
@@ -892,24 +776,40 @@ function startPolling() {
 
 // ── ZONE NAME EDITOR ──
 window.renderZoneNameInputs = function() {
+  // Render in Settings tab
   const container = document.getElementById('zone-name-inputs');
-  if (!container) return;
-  if (!state.zones.length) {
-    container.innerHTML = '<div style="font-size:13px;color:var(--muted)">Poll the unit first to see zones.</div>';
-    return;
+  if (container) {
+    if (!state.zones.length) {
+      container.innerHTML = '<div style="font-size:13px;color:var(--muted)">Poll the unit first to see zones.</div>';
+    } else {
+      container.innerHTML = state.zones.map((z,i) => `
+        <div class="setting-row" style="padding:8px 0${i===state.zones.length-1?';border-bottom:none':''}">
+          <div class="setting-label" style="color:var(--muted);font-size:13px">Zone ${i+1}</div>
+          <input class="setting-input" id="zname-${i}" type="text" placeholder="Zone ${i+1}"
+            value="${state.zoneNames[i]||''}" style="width:160px;text-align:left;font-size:13px"
+            oninput="updateZoneName(${i},this.value)">
+        </div>`).join('');
+    }
   }
-  container.innerHTML = state.zones.map((z, i) => `
-    <div class="setting-row" style="padding:8px 0${i === state.zones.length-1 ? ';border-bottom:none' : ''}">
-      <div class="setting-label" style="color:var(--muted);font-size:13px">Zone ${i+1}</div>
-      <input class="setting-input" id="zname-${i}" type="text" placeholder="Zone ${i+1}"
-        value="${state.zoneNames[i] || ''}" style="width:160px;text-align:left;font-size:13px"
-        oninput="updateZoneName(${i}, this.value)">
-    </div>`).join('');
+  // Render in Guardian tab
+  const gContainer = document.getElementById('guardian-zone-names');
+  if (gContainer) {
+    if (!state.zones.length) {
+      gContainer.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:4px 0">Poll the unit first.</div>';
+    } else {
+      gContainer.innerHTML = state.zones.map((z,i) => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--border)">
+          <div style="font-size:13px;color:var(--muted)">Zone ${i+1}</div>
+          <input class="setting-input" type="text" placeholder="Zone ${i+1}"
+            value="${state.zoneNames[i]||''}" style="width:160px;text-align:left;font-size:13px"
+            oninput="updateZoneName(${i},this.value)">
+        </div>`).join('');
+    }
+  }
 };
-
 window.updateZoneName = function(idx, name) {
   state.zoneNames[idx] = name.trim();
-  saveSettings();
+  saveSettingsToCloud();
   updateControlUI();
 };
 
@@ -917,102 +817,95 @@ window.updateZoneName = function(idx, name) {
 function updateControlUI() {
   const pb = document.getElementById('power-btn');
   if (pb) pb.className = 'power-btn' + (state.powerOn ? ' on' : '');
-  const pl = document.getElementById('power-label');
-  if (pl) pl.textContent = state.powerOn ? 'On' : 'Off';
+  setElText('power-label', state.powerOn ? 'On' : 'Off');
   document.querySelectorAll('.mode-pill').forEach(p => {
-    if (p.dataset.mode) p.className = 'mode-pill' + (p.dataset.mode === state.currentMode ? ` active-${state.currentMode}` : '');
+    if (p.dataset.mode) p.className = 'mode-pill' + (p.dataset.mode===state.currentMode ? ' active-'+state.currentMode : '');
   });
   document.querySelectorAll('.fan-pill').forEach(p => {
-    p.className = 'fan-pill' + (parseInt(p.dataset.fan) === state.fanSpeed ? ' active' : '');
+    p.className = 'fan-pill' + (parseInt(p.dataset.fan)===state.fanSpeed ? ' active' : '');
   });
   const rt = document.getElementById('disp-room');
-  if (rt) { rt.textContent = state.roomTemp != null ? state.roomTemp.toFixed(1) : '--'; rt.className = 'temp-value ' + (state.currentMode === 'heat' ? 'heat-color' : 'cool-color'); }
-  const oh = document.getElementById('disp-outside');
-  if (oh) oh.textContent = state.humidity != null ? state.humidity + '%' : '--';
-  const st = document.getElementById('disp-set-temp');
-  if (st) st.textContent = state.setTemp;
+  if (rt) { rt.textContent = state.roomTemp!=null ? state.roomTemp.toFixed(1) : '--'; rt.className = 'temp-value '+(state.currentMode==='heat'?'heat-color':'cool-color'); }
+  setElText('disp-outside', state.humidity!=null ? state.humidity+'%' : '--');
+  setElText('disp-set-temp', state.setTemp);
   updateCostUI();
   const zl = document.getElementById('zone-list');
   if (!zl) return;
   if (!state.zones.length) { zl.innerHTML = '<div style="color:var(--muted);font-size:13px">No zones detected</div>'; return; }
-  zl.innerHTML = state.zones.map((z, i) =>
-    `<div class="zone-item"><div><div class="zone-name">${state.zoneNames[i] || z.name || 'Zone '+(i+1)}</div></div><div class="toggle ${z.amOn ? 'on' : ''}" onclick="toggleZone(${i})"></div></div>`
+  zl.innerHTML = state.zones.map((z,i) =>
+    '<div class="zone-item"><div><div class="zone-name">'+(state.zoneNames[i]||z.name||'Zone '+(i+1))+'</div></div><div class="toggle '+(z.amOn?'on':'')+'" onclick="toggleZone('+i+')"></div></div>'
   ).join('');
 }
 
 // ── COMMANDS ──
 function buildPayload(overrides) {
-  return { amOn: state.powerOn, tempTarget: state.setTemp, fanSpeed: state.fanSpeed, mode: MODE_MAP[state.currentMode] || 2, ...overrides };
+  return { amOn:state.powerOn, tempTarget:state.setTemp, fanSpeed:state.fanSpeed, mode:MODE_MAP[state.currentMode]||2, ...overrides };
 }
 async function togglePower() {
   state.powerOn = !state.powerOn; updateControlUI();
-  addLog(`Power → ${state.powerOn ? 'ON' : 'OFF'}`, 'info');
-  await actronCommand(buildPayload({ amOn: state.powerOn }));
+  addLog('Power → ' + (state.powerOn?'ON':'OFF'), 'info');
+  await actronCommand(buildPayload({ amOn:state.powerOn }));
 }
 async function setMode(mode) {
   state.currentMode = mode; updateControlUI();
-  addLog(`Mode → ${mode}`, 'info');
-  await actronCommand(buildPayload({ mode: MODE_MAP[mode] }));
+  addLog('Mode → ' + mode, 'info');
+  await actronCommand(buildPayload({ mode:MODE_MAP[mode] }));
 }
 async function setFanSpeed(speed) {
   state.fanSpeed = speed; updateControlUI();
   addLog('Fan speed → ' + ['Auto','Low','Medium','High'][speed], 'info');
-  await actronCommand(buildPayload({ fanSpeed: speed }));
+  await actronCommand(buildPayload({ fanSpeed:speed }));
 }
 async function setDryMode() {
   state.currentMode = 'cool'; state.fanSpeed = 1; updateControlUI();
   addLog('Dry mode — Cool + Low fan', 'info');
-  await actronCommand(buildPayload({ mode: 2, fanSpeed: 1 }));
+  await actronCommand(buildPayload({ mode:2, fanSpeed:1 }));
 }
 async function adjustTemp(delta) {
   const nt = Math.min(30, Math.max(16, state.setTemp + delta));
   state.setTemp = nt; updateControlUI();
-  addLog(`Set temp → ${nt}°C`, 'info');
-  await actronCommand(buildPayload({ tempTarget: nt }));
+  addLog('Set temp → ' + nt + '°C', 'info');
+  await actronCommand(buildPayload({ tempTarget:nt }));
 }
 window.toggleZone = async function(idx) {
   if (!state.zones[idx]) return;
   state.zones[idx].amOn = !state.zones[idx].amOn; updateControlUI();
   const cmd = {};
-  state.zones.forEach((z, i) => { cmd[`zone${i+1}amOn`] = z.amOn; });
+  state.zones.forEach((z,i) => { cmd['zone'+(i+1)+'amOn'] = z.amOn; });
   await actronCommand(cmd);
-  addLog(`Zone "${state.zoneNames[idx] || state.zones[idx].name || 'Zone '+(idx+1)}" → ${state.zones[idx].amOn ? 'ON' : 'OFF'}`, 'info');
+  addLog('Zone "' + (state.zoneNames[idx]||state.zones[idx].name||'Zone '+(idx+1)) + '" → ' + (state.zones[idx].amOn?'ON':'OFF'), 'info');
 };
 
 // ── EMAIL ──
 async function sendGuardianEmail(action) {
-  const svc  = document.getElementById('ejs-service');
-  const tmpl = document.getElementById('ejs-template');
-  const key  = document.getElementById('ejs-pubkey');
-  if (!svc || !tmpl || !key || !svc.value || !tmpl.value || !key.value) {
+  if (!state.ejsService || !state.ejsTemplate || !state.ejsPubkey) {
     addLog('Email not sent — EmailJS not configured', 'warn'); return;
   }
   try {
-    emailjs.init(key.value);
-    await emailjs.send(svc.value, tmpl.value, {
+    emailjs.init(state.ejsPubkey);
+    await emailjs.send(state.ejsService, state.ejsTemplate, {
       to_email:      ALERT_EMAIL,
       override_temp: state.overrideDetectedTemp || 18,
-      room_temp:     state.roomTemp?.toFixed(1) || 'unknown',
+      room_temp:     state.roomTemp ? state.roomTemp.toFixed(1) : 'unknown',
       threshold:     state.guardianThreshold,
-      action:        action === 'turned_off' ? 'A/C has been turned off by Guardian.' : 'Test alert.',
+      action:        action==='turned_off' ? 'A/C has been turned off by Guardian.' : 'Test alert.',
       time:          new Date().toLocaleString('en-AU'),
     });
-    addLog(`Alert email sent to ${ALERT_EMAIL}`, 'ok');
+    addLog('Alert email sent to ' + ALERT_EMAIL, 'ok');
   } catch(e) {
-    addLog(`Email failed: ${JSON.stringify(e)}`, 'alert');
+    addLog('Email failed: ' + JSON.stringify(e), 'alert');
   }
 }
 
 // ── NAV ──
 function showTab(name) {
-  document.querySelectorAll('.tab-content').forEach(t => { t.style.display = 'none'; });
+  document.querySelectorAll('.tab-content').forEach(t => { t.style.display='none'; });
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  const tab = document.getElementById(`tab-${name}`);
-  if (tab) { tab.style.display = 'flex'; tab.style.flexDirection = 'column'; }
-  const btn = document.querySelector(`.nav-btn[data-tab="${name}"]`);
+  const tab = document.getElementById('tab-'+name);
+  if (tab) { tab.style.display='flex'; tab.style.flexDirection='column'; }
+  const btn = document.querySelector('.nav-btn[data-tab="'+name+'"]');
   if (btn) btn.classList.add('active');
-  if (name === 'settings') renderZoneNameInputs();
-  if (name === 'cost') updateCostUI();
+  if (name==='cost') updateCostUI();
 }
 
 // ── APP LIFECYCLE ──
@@ -1020,18 +913,14 @@ function showApp(auth, isDemo) {
   state.auth = auth; state.isDemo = isDemo;
   document.getElementById('login-screen').classList.remove('active');
   document.getElementById('app-screen').classList.add('active');
-  const sud = document.getElementById('s-user-display');
-  const skd = document.getElementById('s-key-display');
-  if (sud) sud.textContent = auth?.deviceId || 'Demo';
-  if (skd) skd.textContent = auth?.token ? '••••' + auth.token.slice(-4) : 'Demo';
-  loadSettings();
-  loadCostData();
-  setGuardianMode(state.guardianMode, false); // init UI without syncing to cloud
+  setElText('s-user-display', auth?.deviceId || 'Demo');
+  setElText('s-key-display',  auth?.token ? '••••'+auth.token.slice(-4) : 'Demo');
+  loadPollInterval();
+  setGuardianMode('scheduled', false); // default UI until cloud loads
   showTab('control');
-  startPolling();
+  startPolling(); // first poll will load all settings from JSONBin
   if ('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(() => {});
 }
-
 function showLogin() {
   document.getElementById('app-screen').classList.remove('active');
   document.getElementById('login-screen').classList.add('active');
@@ -1059,61 +948,62 @@ document.getElementById('btn-temp-down').addEventListener('click', () => adjustT
 document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
 document.getElementById('g-threshold').addEventListener('change', () => {
   state.guardianThreshold = parseInt(document.getElementById('g-threshold').value);
-  saveSettings(); syncGuardianSettingsToCloud();
-  addLog('Guardian threshold set to ' + state.guardianThreshold + '°C', 'info');
+  saveSettingsToCloud(); addLog('Guardian threshold → ' + state.guardianThreshold + '°C', 'info');
 });
 document.getElementById('g-grace').addEventListener('change', () => {
   state.gracePeriodMin = parseInt(document.getElementById('g-grace').value);
-  saveSettings(); syncGuardianSettingsToCloud();
-  addLog('Grace period set to ' + state.gracePeriodMin + ' min', 'info');
+  saveSettingsToCloud(); addLog('Grace period → ' + state.gracePeriodMin + ' min', 'info');
 });
 document.getElementById('g-from').addEventListener('change', () => {
   state.scheduleFrom = document.getElementById('g-from').value;
-  saveSettings(); syncGuardianSettingsToCloud();
-  addLog('Guardian schedule: ' + state.scheduleFrom + ' to ' + state.scheduleTo, 'info');
+  saveSettingsToCloud(); addLog('Schedule from → ' + state.scheduleFrom, 'info');
 });
 document.getElementById('g-to').addEventListener('change', () => {
   state.scheduleTo = document.getElementById('g-to').value;
-  saveSettings(); syncGuardianSettingsToCloud();
-  addLog('Guardian schedule: ' + state.scheduleFrom + ' to ' + state.scheduleTo, 'info');
+  saveSettingsToCloud(); addLog('Schedule to → ' + state.scheduleTo, 'info');
+});
+document.getElementById('g-tariff').addEventListener('change', () => {
+  state.tariff = parseFloat(document.getElementById('g-tariff').value) || 0.35;
+  saveSettingsToCloud(); updateCostUI(); addLog('Tariff → $' + state.tariff + '/kWh', 'info');
 });
 document.getElementById('s-poll').addEventListener('change', () => {
   state.pollInterval = parseInt(document.getElementById('s-poll').value) || 5;
-  saveSettings(); startPolling();
-  addLog(`Poll interval → ${state.pollInterval} min`, 'info');
+  savePollInterval(); startPolling(); addLog('Poll interval → ' + state.pollInterval + ' min', 'info');
 });
 document.getElementById('btn-poll-now').addEventListener('click', poll);
 document.getElementById('btn-logout').addEventListener('click', () => { localStorage.removeItem('actron-auth'); showLogin(); });
-document.getElementById('btn-clear-log').addEventListener('click', () => { logs = []; renderLog(); });
+document.getElementById('btn-clear-log').addEventListener('click', () => { logs=[]; renderLog(); });
 document.getElementById('btn-test-email').addEventListener('click', async () => {
   const res = document.getElementById('email-test-result');
-  res.textContent = 'Sending…'; res.style.color = 'var(--muted)';
+  res.textContent='Sending…'; res.style.color='var(--muted)';
+  // Read current EmailJS values from UI before testing
+  state.ejsService  = document.getElementById('ejs-service').value.trim();
+  state.ejsTemplate = document.getElementById('ejs-template').value.trim();
+  state.ejsPubkey   = document.getElementById('ejs-pubkey').value.trim();
   state.overrideDetectedTemp = 18; state.roomTemp = state.roomTemp || 23;
   await sendGuardianEmail('test');
-  res.textContent = 'Check your inbox'; res.style.color = 'var(--success)';
-  setTimeout(() => { res.textContent = ''; }, 5000);
+  res.textContent='Check your inbox'; res.style.color='var(--success)';
+  setTimeout(() => { res.textContent=''; }, 5000);
 });
 ['ejs-service','ejs-template','ejs-pubkey'].forEach(id => {
-  const el = document.getElementById(id);
-  if (el) el.addEventListener('change', saveSettings);
-});
-document.getElementById('tariff-input').addEventListener('change', () => {
-  state.tariff = parseFloat(document.getElementById('tariff-input').value) || 0.35;
-  saveCostData(); updateCostUI();
+  document.getElementById(id).addEventListener('change', () => {
+    state.ejsService  = document.getElementById('ejs-service').value.trim();
+    state.ejsTemplate = document.getElementById('ejs-template').value.trim();
+    state.ejsPubkey   = document.getElementById('ejs-pubkey').value.trim();
+    saveSettingsToCloud();
+  });
 });
 document.getElementById('btn-reset-today').addEventListener('click', () => {
-  state.costTracker.todayKwh = 0; saveCostData(); updateCostUI();
-  addLog('Today cost reset', 'info');
+  state.costTracker.todayKwh=0; updateCostUI(); addLog('Today cost reset', 'info');
 });
 document.getElementById('btn-reset-all').addEventListener('click', () => {
-  state.costTracker = { todayKwh:0, monthKwh:0, totalKwh:0, lastTickTime:null, lastMonth:null, lastDay:null, history:{} };
-  saveCostData(); updateCostUI();
-  addLog('All cost data reset', 'info');
+  state.costTracker={todayKwh:0,monthKwh:0,totalKwh:0,lastTickTime:null,lastMonth:null,lastDay:null,history:{}};
+  updateCostUI(); addLog('All cost data reset', 'info');
 });
 
 // ── INIT ──
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
-const savedAuth = (() => { try { return JSON.parse(localStorage.getItem('actron-auth') || 'null'); } catch(e) { return null; } })();
+const savedAuth = (() => { try { return JSON.parse(localStorage.getItem('actron-auth')||'null'); } catch(e) { return null; } })();
 if (savedAuth?.token) showApp(savedAuth, false);
 </script>
 </body>
