@@ -205,7 +205,6 @@ body {
       </div>
     </div>
     <div class="scroll-area">
-      <div class="wake-warning" id="wake-warning">⚠️ Keep this app open for Guardian monitoring to stay active.</div>
       <div id="cloud-guardian-banner" style="display:none;background:rgba(248,81,73,0.08);border:0.5px solid rgba(248,81,73,0.4);border-radius:8px;padding:10px 12px;margin-bottom:0.75rem;font-size:12px;color:var(--danger);line-height:1.5;text-align:center;">
         🚨 <strong>Cloud Guardian Alert</strong><br>
         Set temp overridden to <span id="cg-override-temp">--</span>°C (threshold: <span id="cg-threshold">--</span>°C)<br>
@@ -1057,9 +1056,7 @@ function showApp(auth, isDemo) {
   showTab('control');
   startPolling();
   if ('wakeLock' in navigator) {
-    navigator.wakeLock.request('screen').then(() => {
-      document.getElementById('wake-warning').style.display = 'none';
-    }).catch(() => {});
+    navigator.wakeLock.request('screen').catch(() => {});
   }
 }
 
