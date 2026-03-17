@@ -1132,25 +1132,25 @@ document.getElementById('g-grace').addEventListener('change', () => {
   syncGuardianSettingsToCloud();
   addLog('Grace period set to ' + state.gracePeriodMin + ' min', 'info');
 });
-const gFrom = document.getElementById('g-from'); if(gFrom) gFrom.addEventListener('change', () => {
+document.getElementById('g-from') && document.getElementById('g-from').addEventListener('change', () => {
   state.scheduleFrom = document.getElementById('g-from').value;
   saveSettings();
   syncGuardianSettingsToCloud();
   addLog('Guardian schedule: ' + state.scheduleFrom + ' to ' + state.scheduleTo, 'info');
 });
-const gTo = document.getElementById('g-to'); if(gTo) gTo.addEventListener('change', () => {
+document.getElementById('g-to') && document.getElementById('g-to').addEventListener('change', () => {
   state.scheduleTo = document.getElementById('g-to').value;
   saveSettings();
   syncGuardianSettingsToCloud();
   addLog('Guardian schedule: ' + state.scheduleFrom + ' to ' + state.scheduleTo, 'info');
 });
-const gFrom = document.getElementById('g-from'); if(gFrom) gFrom.addEventListener('change', () => {
+document.getElementById('g-from') && document.getElementById('g-from').addEventListener('change', () => {
   state.scheduleFrom = document.getElementById('g-from').value;
   saveSettings();
   syncGuardianSettingsToCloud();
   addLog('Guardian schedule: ' + state.scheduleFrom + ' to ' + state.scheduleTo, 'info');
 });
-const gTo = document.getElementById('g-to'); if(gTo) gTo.addEventListener('change', () => {
+document.getElementById('g-to') && document.getElementById('g-to').addEventListener('change', () => {
   state.scheduleTo = document.getElementById('g-to').value;
   saveSettings();
   syncGuardianSettingsToCloud();
