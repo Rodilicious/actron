@@ -786,11 +786,16 @@ function updateCloudGuardianBanner(record) {
     banner.style.display = 'block';
     okBanner.style.display = 'none';
     startCgCountdown();
+    state.cgWasActive = true;
   } else {
     cgDeadline = null;
     clearInterval(cgCountdownTimer);
     banner.style.display = 'none';
     okBanner.style.display = 'block';
+    if (state.cgWasActive) {
+      state.cgWasActive = false;
+      addLog('🚨 Cloud Guardian turned A/C off at ' + new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' }), 'alert');
+    }
   }
 }
 
