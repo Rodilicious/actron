@@ -140,9 +140,9 @@ jobs:
             async function sendEmail(overrideTemp, action) {
               const resp = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'origin': 'https://rodilicious.github.io' },
                 body: JSON.stringify({
-                  service_id: EJS_SERVICE, template_id: EJS_TEMPLATE, user_id: EJS_PUBKEY,
+                  service_id: EJS_SERVICE, template_id: EJS_TEMPLATE, user_id: EJS_PUBKEY, accessToken: EJS_PUBKEY,
                   template_params: {
                     to_email: ALERT_EMAIL, override_temp: overrideTemp, threshold: THRESHOLD,
                     room_temp: 'N/A', action: action,
