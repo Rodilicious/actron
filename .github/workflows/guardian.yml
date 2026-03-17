@@ -161,10 +161,28 @@ jobs:
             let bin;
             try { bin = await loadBin(); } catch(e) { bin = {}; console.log('JSONBin load failed:', e.message); }
 
-            // Read threshold and grace period from app settings saved in JSONBin
-            const THRESHOLD = bin.settings?.guardianThreshold || THRESHOLD_DEFAULT;
-            const GRACE_MS  = (bin.settings?.gracePeriodMin || GRACE_MIN_DEFAULT) * 60 * 1000;
-            console.log('Using threshold: ' + THRESHOLD + 'C, grace: ' + (GRACE_MS/60000) + 'min (from ' + (bin.settings?.guardianThreshold ? 'JSONBin' : 'defaults') + ')');
+            // Read settings from JSONBin
+            const THRESHOLD     = bin.settings?.guardianThreshold || THRESHOLD_DEFAULT;
+            const GRACE_MS      = (bin.settings?.gracePeriodMin || GRACE_MIN_DEFAULT) * 60 * 1000;
+            const GUARDIAN_MODE = bin.settings?.guardianMode || 'always';
+            const SCHEDULE_FROM = bin.settings?.scheduleFrom || '22:00';
+            const SCHEDULE_TO   = bin.settings?.scheduleTo   || '06:00';
+            console.log('Mode: ' + GUARDIAN_MODE + ', threshold: ' + THRESHOLD + 'C, grace: ' + (GRACE_MS/60000) + 'min');
+
+            // Check if Guardian should be active based on mode and schedule
+            function isGuardianActive() {
+              if (GUARDIAN_MODE === 'off') return false;
+              if (GUARDIAN_MODE === 'always') return true;
+              const sydneyTime = new Date().toLocaleString('en-AU', { timeZone: 'Australia/Sydney', hour: '2-digit', minute: '2-digit', hour12: false });
+              const parts = sydneyTime.split(':');
+              const nowMins = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+              const fromParts = SCHEDULE_FROM.split(':');
+              const toParts   = SCHEDULE_TO.split(':');
+              const fromMins  = parseInt(fromParts[0]) * 60 + parseInt(fromParts[1]);
+              const toMins    = parseInt(toParts[0])   * 60 + parseInt(toParts[1]);
+              if (fromMins > toMins) return nowMins >= fromMins || nowMins < toMins;
+              return nowMins >= fromMins && nowMins < toMins;
+            }
             let overrideFirstSeen = bin.overrideFirstSeen || null;
             let overrideTemp = bin.overrideTemp || null;
             let cost = bin.cost || { todayKwh: 0, monthKwh: 0, totalKwh: 0, lastDay: null, lastMonth: null, history: {} };
@@ -210,7 +228,10 @@ jobs:
 
             // ── GUARDIAN LOGIC ──
             let guardianResult;
-            if (!powerOn) {
+            if (!isGuardianActive()) {
+              if (bin.overrideFirstSeen) { overrideFirstSeen = null; overrideTemp = null; }
+              guardianResult = 'Guardian inactive (' + GUARDIAN_MODE + (GUARDIAN_MODE === 'scheduled' ? ': ' + SCHEDULE_FROM + '-' + SCHEDULE_TO : '') + ')';
+            } else if (!powerOn) {
               overrideFirstSeen = null;
               guardianResult = 'AC is off';
             } else if (setTemp < THRESHOLD) {
