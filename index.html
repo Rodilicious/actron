@@ -640,6 +640,28 @@ window.getSensorReadings = async function() {
       state.costTracker.lastMonth = record.cost.lastMonth || null;
       updateCostUI();
     }
+    // Sync guardian settings from cloud
+    if (record.settings) {
+      if (record.settings.guardianThreshold) {
+        state.guardianThreshold = record.settings.guardianThreshold;
+        document.getElementById('g-threshold').value = record.settings.guardianThreshold;
+      }
+      if (record.settings.gracePeriodMin) {
+        state.gracePeriodMin = record.settings.gracePeriodMin;
+        document.getElementById('g-grace').value = record.settings.gracePeriodMin;
+      }
+      if (record.settings.guardianMode) {
+        setGuardianMode(record.settings.guardianMode);
+      }
+      if (record.settings.scheduleFrom) {
+        state.scheduleFrom = record.settings.scheduleFrom;
+        document.getElementById('g-from').value = record.settings.scheduleFrom;
+      }
+      if (record.settings.scheduleTo) {
+        state.scheduleTo = record.settings.scheduleTo;
+        document.getElementById('g-to').value = record.settings.scheduleTo;
+      }
+    }
     // Update cloud guardian status banner
     updateCloudGuardianBanner(record);
     return record.sensor || { temp: null, humidity: null };
