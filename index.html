@@ -283,6 +283,60 @@ body {
         </div>
         <div class="setting-row" style="padding:8px 0">
           <div>
+            <div class="setting-label">Guardian mode</div>
+            <div class="setting-sub">When should Guardian be active</div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="mode-pill" id="gmode-off" onclick="setGuardianMode('off')" style="padding:6px 10px;font-size:11px">Off</button>
+            <button class="mode-pill" id="gmode-scheduled" onclick="setGuardianMode('scheduled')" style="padding:6px 10px;font-size:11px">Scheduled</button>
+            <button class="mode-pill" id="gmode-always" onclick="setGuardianMode('always')" style="padding:6px 10px;font-size:11px">Always On</button>
+          </div>
+        </div>
+        <div id="schedule-rows" style="display:block">
+          <div class="setting-row" style="padding:8px 0">
+            <div>
+              <div class="setting-label">Active from</div>
+              <div class="setting-sub">Guardian starts at this time</div>
+            </div>
+            <input class="setting-input" id="g-from" type="time" value="22:00" style="width:100px;text-align:center">
+          </div>
+          <div class="setting-row" style="padding:8px 0">
+            <div>
+              <div class="setting-label">Active until</div>
+              <div class="setting-sub">Guardian stops at this time</div>
+            </div>
+            <input class="setting-input" id="g-to" type="time" value="06:00" style="width:100px;text-align:center">
+          </div>
+        </div>
+        <div class="setting-row" style="padding:8px 0">
+          <div>
+            <div class="setting-label">Guardian mode</div>
+            <div class="setting-sub">When should Guardian be active</div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="mode-pill" id="gmode-off" onclick="setGuardianMode('off')" style="padding:6px 10px;font-size:11px">Off</button>
+            <button class="mode-pill" id="gmode-scheduled" onclick="setGuardianMode('scheduled')" style="padding:6px 10px;font-size:11px">Scheduled</button>
+            <button class="mode-pill" id="gmode-always" onclick="setGuardianMode('always')" style="padding:6px 10px;font-size:11px">Always On</button>
+          </div>
+        </div>
+        <div id="schedule-rows" style="display:block">
+          <div class="setting-row" style="padding:8px 0">
+            <div>
+              <div class="setting-label">Active from</div>
+              <div class="setting-sub">Guardian starts at this time</div>
+            </div>
+            <input class="setting-input" id="g-from" type="time" value="22:00" style="width:100px;text-align:center">
+          </div>
+          <div class="setting-row" style="padding:8px 0">
+            <div>
+              <div class="setting-label">Active until</div>
+              <div class="setting-sub">Guardian stops at this time</div>
+            </div>
+            <input class="setting-input" id="g-to" type="time" value="06:00" style="width:100px;text-align:center">
+          </div>
+        </div>
+        <div class="setting-row" style="padding:8px 0">
+          <div>
             <div class="setting-label">Min allowed set temp</div>
             <div class="setting-sub">Cloud Guardian acts if set below this</div>
           </div>
@@ -503,7 +557,7 @@ window.state = {
     lastTickTime: null, lastMonth: null, lastDay: null,
     history: {}
   },
-  guardianThreshold: 22, gracePeriodMin: 10,
+  guardianThreshold: 22, gracePeriodMin: 10, guardianMode: 'scheduled', scheduleFrom: '22:00', scheduleTo: '06:00', guardianMode: 'scheduled', scheduleFrom: '22:00', scheduleTo: '06:00',
 };
 
 // ── PERSISTENCE ──
@@ -512,6 +566,12 @@ function saveSettings() {
     pollInterval: state.pollInterval,
     guardianThreshold: state.guardianThreshold,
     gracePeriodMin: state.gracePeriodMin,
+    guardianMode: state.guardianMode,
+    scheduleFrom: state.scheduleFrom,
+    scheduleTo: state.scheduleTo,
+    guardianMode: state.guardianMode,
+    scheduleFrom: state.scheduleFrom,
+    scheduleTo: state.scheduleTo,
     ejsService:  document.getElementById('ejs-service').value,
     ejsTemplate: document.getElementById('ejs-template').value,
     ejsPubkey:   document.getElementById('ejs-pubkey').value,
@@ -525,6 +585,12 @@ function loadSettings() {
     if (s.pollInterval)      { state.pollInterval = s.pollInterval; document.getElementById('s-poll').value = s.pollInterval; }
     if (s.guardianThreshold) { state.guardianThreshold = s.guardianThreshold; document.getElementById('g-threshold').value = s.guardianThreshold; }
     if (s.gracePeriodMin)    { state.gracePeriodMin = s.gracePeriodMin; document.getElementById('g-grace').value = s.gracePeriodMin; }
+    if (s.guardianMode)  { state.guardianMode  = s.guardianMode;  setGuardianMode(s.guardianMode); }
+    if (s.scheduleFrom)  { state.scheduleFrom  = s.scheduleFrom;  document.getElementById('g-from').value = s.scheduleFrom; }
+    if (s.scheduleTo)    { state.scheduleTo    = s.scheduleTo;    document.getElementById('g-to').value   = s.scheduleTo; }
+    if (s.guardianMode)  { state.guardianMode  = s.guardianMode;  setGuardianMode(s.guardianMode); }
+    if (s.scheduleFrom)  { state.scheduleFrom  = s.scheduleFrom;  document.getElementById('g-from').value = s.scheduleFrom; }
+    if (s.scheduleTo)    { state.scheduleTo    = s.scheduleTo;    document.getElementById('g-to').value   = s.scheduleTo; }
     if (s.ejsService)  document.getElementById('ejs-service').value = s.ejsService;
     if (s.ejsTemplate) document.getElementById('ejs-template').value = s.ejsTemplate;
     if (s.ejsPubkey)   document.getElementById('ejs-pubkey').value = s.ejsPubkey;
@@ -755,7 +821,10 @@ async function syncGuardianSettingsToCloud() {
     const record = data.record || {};
     record.settings = {
       guardianThreshold: state.guardianThreshold,
-      gracePeriodMin: state.gracePeriodMin
+      gracePeriodMin: state.gracePeriodMin,
+      guardianMode: state.guardianMode,
+      scheduleFrom: state.scheduleFrom,
+      scheduleTo: state.scheduleTo
     };
     await fetch('https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID, {
       method: 'PUT',
@@ -1009,6 +1078,8 @@ function showApp(auth, isDemo) {
   document.getElementById('s-key-display').textContent = auth?.token ? '••••' + auth.token.slice(-4) : 'Demo';
   loadSettings();
   loadCostData();
+  setGuardianMode(state.guardianMode || 'scheduled');
+  setGuardianMode(state.guardianMode || 'scheduled');
   showTab('control');
   startPolling();
   if ('wakeLock' in navigator) {
@@ -1045,6 +1116,30 @@ document.getElementById('btn-dry').addEventListener('click', setDryMode);
 document.getElementById('btn-temp-up').addEventListener('click',   () => adjustTemp(+1));
 document.getElementById('btn-temp-down').addEventListener('click', () => adjustTemp(-1));
 document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+window.setGuardianMode = function(mode) {
+  state.guardianMode = mode;
+  ['off','scheduled','always'].forEach(m => {
+    const btn = document.getElementById('gmode-' + m);
+    if (btn) btn.className = 'mode-pill' + (m === mode ? ' active-cool' : '');
+  });
+  const schedRows = document.getElementById('schedule-rows');
+  if (schedRows) schedRows.style.display = mode === 'scheduled' ? 'block' : 'none';
+  saveSettings();
+  syncGuardianSettingsToCloud();
+  addLog('Guardian mode set to ' + mode, 'info');
+}
+window.setGuardianMode = function(mode) {
+  state.guardianMode = mode;
+  ['off','scheduled','always'].forEach(m => {
+    const btn = document.getElementById('gmode-' + m);
+    if (btn) btn.className = 'mode-pill' + (m === mode ? ' active-cool' : '');
+  });
+  const schedRows = document.getElementById('schedule-rows');
+  if (schedRows) schedRows.style.display = mode === 'scheduled' ? 'block' : 'none';
+  saveSettings();
+  syncGuardianSettingsToCloud();
+  addLog('Guardian mode set to ' + mode, 'info');
+}
 document.getElementById('g-threshold').addEventListener('change', () => {
   state.guardianThreshold = parseInt(document.getElementById('g-threshold').value);
   saveSettings();
@@ -1056,6 +1151,30 @@ document.getElementById('g-grace').addEventListener('change', () => {
   saveSettings();
   syncGuardianSettingsToCloud();
   addLog('Grace period set to ' + state.gracePeriodMin + ' min', 'info');
+});
+document.getElementById('g-from').addEventListener('change', () => {
+  state.scheduleFrom = document.getElementById('g-from').value;
+  saveSettings();
+  syncGuardianSettingsToCloud();
+  addLog('Guardian schedule: ' + state.scheduleFrom + ' to ' + state.scheduleTo, 'info');
+});
+document.getElementById('g-to').addEventListener('change', () => {
+  state.scheduleTo = document.getElementById('g-to').value;
+  saveSettings();
+  syncGuardianSettingsToCloud();
+  addLog('Guardian schedule: ' + state.scheduleFrom + ' to ' + state.scheduleTo, 'info');
+});
+document.getElementById('g-from').addEventListener('change', () => {
+  state.scheduleFrom = document.getElementById('g-from').value;
+  saveSettings();
+  syncGuardianSettingsToCloud();
+  addLog('Guardian schedule: ' + state.scheduleFrom + ' to ' + state.scheduleTo, 'info');
+});
+document.getElementById('g-to').addEventListener('change', () => {
+  state.scheduleTo = document.getElementById('g-to').value;
+  saveSettings();
+  syncGuardianSettingsToCloud();
+  addLog('Guardian schedule: ' + state.scheduleFrom + ' to ' + state.scheduleTo, 'info');
 });
 document.getElementById('s-poll').addEventListener('change', () => {
   state.pollInterval = parseInt(document.getElementById('s-poll').value) || 15;
