@@ -206,8 +206,11 @@ body {
     </div>
     <div class="scroll-area">
       <div class="wake-warning" id="wake-warning">⚠️ Keep this app open for Guardian monitoring to stay active.</div>
-      <div id="cloud-guardian-banner" style="display:none;background:rgba(248,81,73,0.08);border:0.5px solid rgba(248,81,73,0.4);border-radius:8px;padding:10px 12px;margin-bottom:0.75rem;font-size:12px;color:var(--danger);line-height:1.5;">
-        🚨 <strong>Cloud Guardian Alert</strong> — Set temp overridden to <span id="cg-override-temp">--</span>°C (threshold: <span id="cg-threshold">--</span>°C). A/C will be turned off in <span id="cg-countdown">--</span> min.
+      <div id="cloud-guardian-banner" style="display:none;background:rgba(248,81,73,0.08);border:0.5px solid rgba(248,81,73,0.4);border-radius:8px;padding:10px 12px;margin-bottom:0.75rem;font-size:12px;color:var(--danger);line-height:1.5;text-align:center;">
+        🚨 <strong>Cloud Guardian Alert</strong><br>
+        Set temp overridden to <span id="cg-override-temp">--</span>°C (threshold: <span id="cg-threshold">--</span>°C)<br>
+        <div style="font-size:36px;font-weight:300;letter-spacing:-2px;margin:6px 0;color:var(--danger)" id="cg-countdown">--:--</div>
+        <div style="font-size:11px;color:var(--muted)">until A/C turns off</div>
       </div>
       <div id="cloud-guardian-ok" style="display:none;background:rgba(63,185,80,0.08);border:0.5px solid rgba(63,185,80,0.3);border-radius:8px;padding:10px 12px;margin-bottom:0.75rem;font-size:12px;color:var(--success);line-height:1.5;">
         ✅ <strong>Cloud Guardian</strong> — Watching. Set temp OK.
@@ -766,6 +769,9 @@ async function syncGuardianSettingsToCloud() {
 }
 
 // ── CLOUD GUARDIAN BANNER ──
+let cgCountdownTimer = null;
+let cgDeadline = null;
+
 function updateCloudGuardianBanner(record) {
   const banner = document.getElementById('cloud-guardian-banner');
   const okBanner = document.getElementById('cloud-guardian-ok');
@@ -774,17 +780,38 @@ function updateCloudGuardianBanner(record) {
   const threshold = (record.settings && record.settings.guardianThreshold) || state.guardianThreshold || 22;
   const graceMins = (record.settings && record.settings.gracePeriodMin) || state.gracePeriodMin || 10;
   if (overrideFirstSeen) {
-    const elapsed = (Date.now() - overrideFirstSeen) / 60000;
-    const remaining = Math.max(0, graceMins - elapsed);
+    cgDeadline = overrideFirstSeen + (graceMins * 60 * 1000);
     document.getElementById('cg-override-temp').textContent = record.overrideTemp || '--';
     document.getElementById('cg-threshold').textContent = threshold;
-    document.getElementById('cg-countdown').textContent = remaining < 1 ? 'less than 1' : Math.ceil(remaining).toString();
     banner.style.display = 'block';
     okBanner.style.display = 'none';
+    startCgCountdown();
   } else {
+    cgDeadline = null;
+    clearInterval(cgCountdownTimer);
     banner.style.display = 'none';
     okBanner.style.display = 'block';
   }
+}
+
+function startCgCountdown() {
+  clearInterval(cgCountdownTimer);
+  tickCgCountdown();
+  cgCountdownTimer = setInterval(tickCgCountdown, 1000);
+}
+
+function tickCgCountdown() {
+  const el = document.getElementById('cg-countdown');
+  if (!el || !cgDeadline) return;
+  const rem = cgDeadline - Date.now();
+  if (rem <= 0) {
+    el.textContent = '00:00';
+    clearInterval(cgCountdownTimer);
+    return;
+  }
+  const m = Math.floor(rem / 60000);
+  const s = Math.floor((rem % 60000) / 1000);
+  el.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
 }
 
 // ── POLL ──
