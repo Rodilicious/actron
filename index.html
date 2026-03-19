@@ -410,7 +410,7 @@ body {
           Actron Connect PWA v3.0<br>
           Cloud Guardian runs every 5 minutes via GitHub Actions<br>
           All settings stored centrally in JSONBin<br>
-          Alert email: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="572538337934253820333225173827243432392325327934383a">[email&#160;protected]</a>
+          Alert email: rod.crowder@opscentre.com
         </div>
       </div>
     </div>
@@ -1006,4 +1006,9 @@ document.getElementById('btn-reset-all').addEventListener('click', () => {
 });
 
 // ── INIT ──
-if ('serviceWorker' in navigator) navigator.serviceWorker.regis
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+const savedAuth = (() => { try { return JSON.parse(localStorage.getItem('actron-auth')||'null'); } catch(e) { return null; } })();
+if (savedAuth?.token) showApp(savedAuth, false);
+</script>
+</body>
+</html>
