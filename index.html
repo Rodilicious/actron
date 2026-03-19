@@ -410,7 +410,7 @@ body {
           Actron Connect PWA v3.0<br>
           Cloud Guardian runs every 5 minutes via GitHub Actions<br>
           All settings stored centrally in JSONBin<br>
-          Alert email: rod.crowder@opscentre.com
+          Alert email: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="572538337934253820333225173827243432392325327934383a">[email&#160;protected]</a>
         </div>
       </div>
     </div>
@@ -441,12 +441,12 @@ body {
   </nav>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script>
 // ── CONSTANTS ──
 const ALERT_EMAIL    = 'rod.crowder@opscentre.com';
 const ACTRON_API     = 'https://que.actronair.com.au/rest/v0/device';
-const MODE_MAP       = { 2:'cool', 3:'heat', 4:'fan', 1:'auto', cool:2, heat:3, fan:4, auto:1 };
+const MODE_MAP       = { 0:'fan', 1:'auto', 2:'cool', 3:'heat', 4:'fan', cool:2, heat:3, fan:4, auto:1 };
 const JSONBIN_BIN_ID = '69b62255b7ec241ddc6c9152';
 const JSONBIN_KEY    = '$2a$10$GCz45pcvt.RNJavm03JyjOJDsYLhyB1ABsgeTWK7s21epV2Te.9hW';
 const POWER_MAP      = {
@@ -831,7 +831,7 @@ function updateControlUI() {
   const rt = document.getElementById('disp-room');
   if (rt) { rt.textContent = state.roomTemp!=null ? state.roomTemp.toFixed(1) : '--'; rt.className = 'temp-value '+(state.currentMode==='heat'?'heat-color':'cool-color'); }
   setElText('disp-outside', state.humidity!=null ? state.humidity+'%' : '--');
-  setElText('disp-set-temp', state.setTemp);
+  setElText('disp-set-temp', Number(state.setTemp).toFixed(1));
   updateCostUI();
   const zl = document.getElementById('zone-list');
   if (!zl) return;
@@ -866,7 +866,7 @@ async function setDryMode() {
   await actronCommand(buildPayload({ mode:2, fanSpeed:1 }));
 }
 async function adjustTemp(delta) {
-  const nt = Math.min(30, Math.max(16, state.setTemp + delta));
+  const nt = Math.round((Math.min(30, Math.max(16, state.setTemp + delta))) * 2) / 2;
   state.setTemp = nt; updateControlUI();
   addLog('Set temp → ' + nt + '°C', 'info');
   await actronCommand(buildPayload({ tempTarget:nt }));
@@ -947,8 +947,8 @@ document.getElementById('power-btn').addEventListener('click', togglePower);
 document.querySelectorAll('.mode-pill').forEach(p => { if (p.dataset.mode) p.addEventListener('click', () => setMode(p.dataset.mode)); });
 document.querySelectorAll('.fan-pill').forEach(p => p.addEventListener('click', () => setFanSpeed(parseInt(p.dataset.fan))));
 document.getElementById('btn-dry').addEventListener('click', setDryMode);
-document.getElementById('btn-temp-up').addEventListener('click',   () => adjustTemp(+1));
-document.getElementById('btn-temp-down').addEventListener('click', () => adjustTemp(-1));
+document.getElementById('btn-temp-up').addEventListener('click',   () => adjustTemp(+0.5));
+document.getElementById('btn-temp-down').addEventListener('click', () => adjustTemp(-0.5));
 document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
 document.getElementById('g-threshold').addEventListener('change', () => {
   state.guardianThreshold = parseInt(document.getElementById('g-threshold').value);
@@ -1006,9 +1006,4 @@ document.getElementById('btn-reset-all').addEventListener('click', () => {
 });
 
 // ── INIT ──
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
-const savedAuth = (() => { try { return JSON.parse(localStorage.getItem('actron-auth')||'null'); } catch(e) { return null; } })();
-if (savedAuth?.token) showApp(savedAuth, false);
-</script>
-</body>
-</html>
+if ('serviceWorker' in navigator) navigator.serviceWorker.regis
