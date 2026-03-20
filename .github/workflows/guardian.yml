@@ -231,7 +231,10 @@ jobs:
             if (!isGuardianActive()) {
               if (bin.overrideFirstSeen) { overrideFirstSeen = null; overrideTemp = null; }
               guardianResult = 'Guardian inactive (' + GUARDIAN_MODE + (GUARDIAN_MODE === 'scheduled' ? ': ' + SCHEDULE_FROM + '-' + SCHEDULE_TO : '') + ')';
-            } else if (!powerOn) {
+            } else if (mode === 4) {
+              overrideFirstSeen = null;
+              guardianResult = 'Fan-only mode — Guardian inactive';
+              } else if (!powerOn) {
               overrideFirstSeen = null;
               guardianResult = 'AC is off';
             } else if (setTemp < THRESHOLD) {
