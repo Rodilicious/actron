@@ -136,6 +136,28 @@ jobs:
               }
             }
 
+            // ── PUSH NOTIFICATION (ntfy.sh) ──
+            async function sendPush(title, message) {
+              const topic = bin.settings?.ntfyTopic || 'actronguardian-rodc';
+              const resp = await fetch(`https://ntfy.sh/${topic}`, {
+                method: 'POST',
+                headers: { 'Title': title, 'Priority': 'high', 'Content-Type': 'text/plain' },
+                body: message
+              });
+              if (!resp.ok) throw new Error(`ntfy HTTP ${resp.status}`);
+            }
+
+            // ── NOTIFY (email, push, or both) ──
+            async function notify(title, message, overrideTemp, action) {
+              const mode = bin.settings?.notifMode || 'email';
+              if (mode === 'email' || mode === 'both') {
+                try { await sendEmail(overrideTemp, action); console.log('Email sent.'); } catch(e) { console.log('Email failed:', e.message); }
+              }
+              if (mode === 'push' || mode === 'both') {
+                try { await sendPush(title, message); console.log('Push sent.'); } catch(e) { console.log('Push failed:', e.message); }
+              }
+            }
+
             // ── EMAIL ──
             async function sendEmail(overrideTemp, action) {
               const resp = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
@@ -185,6 +207,8 @@ jobs:
             }
             let overrideFirstSeen = bin.overrideFirstSeen || null;
             let overrideTemp = bin.overrideTemp || null;
+            const lastPowerOn = bin.lastPowerOn ?? null;
+            const lastMode    = bin.lastMode    ?? null;
             let cost = bin.cost || { todayKwh: 0, monthKwh: 0, totalKwh: 0, lastDay: null, lastMonth: null, history: {} };
 
             // Auto-reset on new day/month
@@ -215,6 +239,17 @@ jobs:
 
             console.log(`Actron: power=${powerOn}, setTemp=${setTemp}C, mode=${mode}, fan=${fanSpeed} | Tuya: temp=${tuya.temp}C, humidity=${tuya.humidity}%`);
 
+            // ── STATE CHANGE NOTIFICATIONS ──
+            const MODE_NAMES = { 0:'Auto', 1:'Heat', 2:'Cool', 3:'Fan Only' };
+            if (lastPowerOn !== null && lastPowerOn !== powerOn) {
+              if (powerOn) {
+                await notify('A/C Turned On', `A/C turned on in ${MODE_NAMES[mode]||'Unknown'} mode at ${setTemp}°C`, setTemp, 'A/C turned on.');
+              } else {
+                await notify('A/C Turned Off', 'A/C has been turned off.', setTemp, 'A/C turned off.');
+              }
+            } else if (lastMode !== null && lastMode !== mode && powerOn) {
+              await notify('A/C Mode Changed', `Mode changed from ${MODE_NAMES[lastMode]||lastMode} to ${MODE_NAMES[mode]||mode}`, setTemp, `Mode changed to ${MODE_NAMES[mode]||mode}.`);
+            }
             // ── COST TRACKING ──
             if (powerOn) {
               const modeMap = POWER_MAP[mode] || POWER_MAP[2];
@@ -274,6 +309,8 @@ jobs:
                 overrideFirstSeen,
                 overrideTemp,
                 guardianResult,
+                lastPowerOn: powerOn,
+                lastMode: mode,
                 sensor: { temp: tuya.temp, humidity: tuya.humidity, updatedAt: now },
                 cost,
                 settings: bin.settings || {}
