@@ -297,6 +297,22 @@ body {
         </div>
         <div id="guardian-zone-names" style="margin-top:4px"></div>
       </div>
+      <!-- Notification settings -->
+      <div class="card">
+        <div class="card-label">Notifications</div>
+        <div class="setting-row" style="padding:8px 0">
+          <div><div class="setting-label">Notification mode</div><div class="setting-sub">How to alert you</div></div>
+          <select class="setting-input" id="notif-mode" style="width:100px;text-align:left;font-size:13px">
+            <option value="email">Email</option>
+            <option value="push">Push</option>
+            <option value="both">Both</option>
+          </select>
+        </div>
+        <div class="setting-row" style="padding:8px 0;border-bottom:none">
+          <div><div class="setting-label">ntfy topic</div><div class="setting-sub">Your ntfy.sh topic name</div></div>
+          <input class="setting-input" id="ntfy-topic" type="text" placeholder="actronguardian-rodc" value="actronguardian-rodc" style="width:150px;text-align:left;font-size:13px">
+        </div>
+      </div>
 
       <!-- EmailJS config -->
       <div class="card">
@@ -472,6 +488,7 @@ window.state = {
   tariff: 0.35,
   zoneNames: {},
   ejsService: '', ejsTemplate: '', ejsPubkey: '',
+  notifMode: 'email', ntfyTopic: 'actronguardian-rodc',
   costTracker: { todayKwh:0, monthKwh:0, totalKwh:0, lastMonth:null, lastDay:null, history:{} },
 };
 
@@ -497,6 +514,8 @@ async function loadFromCloud() {
       if (s.ejsService)                { state.ejsService        = s.ejsService;        setEl('ejs-service',  s.ejsService); }
       if (s.ejsTemplate)               { state.ejsTemplate       = s.ejsTemplate;       setEl('ejs-template', s.ejsTemplate); }
       if (s.ejsPubkey)                 { state.ejsPubkey         = s.ejsPubkey;         setEl('ejs-pubkey',   s.ejsPubkey); }
+      if (s.notifMode)                 { state.notifMode         = s.notifMode;         setEl('notif-mode',   s.notifMode); }
+      if (s.ntfyTopic)                 { state.ntfyTopic         = s.ntfyTopic;         setEl('ntfy-topic',   s.ntfyTopic); }
       if (s.guardianMode)              { setGuardianMode(s.guardianMode, false); }
     }
 
@@ -541,6 +560,8 @@ async function saveSettingsToCloud() {
       ejsService:        state.ejsService,
       ejsTemplate:       state.ejsTemplate,
       ejsPubkey:         state.ejsPubkey,
+      notifMode:         state.notifMode,
+      ntfyTopic:         state.ntfyTopic,
     };
     await fetch('https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID, {
       method: 'PUT',
@@ -990,13 +1011,21 @@ document.getElementById('btn-test-email').addEventListener('click', async () => 
   res.textContent='Check your inbox'; res.style.color='var(--success)';
   setTimeout(() => { res.textContent=''; }, 5000);
 });
-['ejs-service','ejs-template','ejs-pubkey'].forEach(id => {
+  ['ejs-service','ejs-template','ejs-pubkey'].forEach(id => {
   document.getElementById(id).addEventListener('change', () => {
     state.ejsService  = document.getElementById('ejs-service').value.trim();
     state.ejsTemplate = document.getElementById('ejs-template').value.trim();
     state.ejsPubkey   = document.getElementById('ejs-pubkey').value.trim();
     saveSettingsToCloud();
   });
+});
+document.getElementById('notif-mode').addEventListener('change', () => {
+  state.notifMode = document.getElementById('notif-mode').value;
+  saveSettingsToCloud(); addLog('Notification mode → ' + state.notifMode, 'info');
+});
+document.getElementById('ntfy-topic').addEventListener('change', () => {
+  state.ntfyTopic = document.getElementById('ntfy-topic').value.trim();
+  saveSettingsToCloud(); addLog('ntfy topic → ' + state.ntfyTopic, 'info');
 });
 document.getElementById('btn-reset-today').addEventListener('click', () => {
   state.costTracker.todayKwh=0; updateCostUI(); addLog('Today cost reset', 'info');
