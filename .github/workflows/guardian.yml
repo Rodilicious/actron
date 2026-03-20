@@ -270,9 +270,10 @@ jobs:
 
             // Save everything to JSONBin
             try {
-              await saveBin({
+             await saveBin({
                 overrideFirstSeen,
                 overrideTemp,
+                guardianResult,
                 sensor: { temp: tuya.temp, humidity: tuya.humidity, updatedAt: now },
                 cost,
                 settings: bin.settings || {}
