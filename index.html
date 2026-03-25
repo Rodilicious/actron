@@ -189,7 +189,7 @@ body {
         <div style="font-size:11px;color:var(--muted)">until A/C turns off</div>
       </div>
       <div id="cloud-guardian-ok" style="display:none;background:rgba(63,185,80,0.08);border:0.5px solid rgba(63,185,80,0.3);border-radius:8px;padding:10px 12px;margin-bottom:0.75rem;font-size:12px;color:var(--success);line-height:1.5;">
-       ✅ <strong>Cloud Guardian</strong> — <span id="cg-status">Watching. Set temp OK.</span>
+        ✅ <strong>Cloud Guardian</strong> — Watching. Set temp OK.
       </div>
       <div class="card">
         <div class="card-label">System Power</div>
@@ -296,22 +296,6 @@ body {
           <div><div class="setting-label">Zone names</div><div class="setting-sub">Tap a zone name to edit</div></div>
         </div>
         <div id="guardian-zone-names" style="margin-top:4px"></div>
-      </div>
-      <!-- Notification settings -->
-      <div class="card">
-        <div class="card-label">Notifications</div>
-        <div class="setting-row" style="padding:8px 0">
-          <div><div class="setting-label">Notification mode</div><div class="setting-sub">How to alert you</div></div>
-          <select class="setting-input" id="notif-mode" style="width:100px;text-align:left;font-size:13px">
-            <option value="email">Email</option>
-            <option value="push">Push</option>
-            <option value="both">Both</option>
-          </select>
-        </div>
-        <div class="setting-row" style="padding:8px 0;border-bottom:none">
-          <div><div class="setting-label">ntfy topic</div><div class="setting-sub">Your ntfy.sh topic name</div></div>
-          <input class="setting-input" id="ntfy-topic" type="text" placeholder="actronguardian-rodc" value="actronguardian-rodc" style="width:150px;text-align:left;font-size:13px">
-        </div>
       </div>
 
       <!-- EmailJS config -->
@@ -421,6 +405,12 @@ body {
         <button class="btn btn-danger" id="btn-logout">Sign Out</button>
       </div>
       <div class="card">
+        <div class="card-label">Zone Names</div>
+        <div id="zone-name-inputs">
+          <div style="font-size:13px;color:var(--muted)">Poll the unit first to see zones.</div>
+        </div>
+      </div>
+      <div class="card">
         <div class="card-label">About</div>
         <div style="font-size:13px;color:var(--muted);line-height:1.7">
           Actron Connect PWA v3.0<br>
@@ -462,7 +452,7 @@ body {
 // ── CONSTANTS ──
 const ALERT_EMAIL    = 'rod.crowder@opscentre.com';
 const ACTRON_API     = 'https://que.actronair.com.au/rest/v0/device';
-const MODE_MAP       = { 0:'auto', 1:'heat', 2:'cool', 3:'fan', cool:2, heat:1, fan:3, auto:0 };
+const MODE_MAP       = { 2:'cool', 3:'heat', 4:'fan', 1:'auto', cool:2, heat:3, fan:4, auto:1 };
 const JSONBIN_BIN_ID = '69b62255b7ec241ddc6c9152';
 const JSONBIN_KEY    = '$2a$10$GCz45pcvt.RNJavm03JyjOJDsYLhyB1ABsgeTWK7s21epV2Te.9hW';
 const POWER_MAP      = {
@@ -488,7 +478,6 @@ window.state = {
   tariff: 0.35,
   zoneNames: {},
   ejsService: '', ejsTemplate: '', ejsPubkey: '',
-  notifMode: 'email', ntfyTopic: 'actronguardian-rodc',
   costTracker: { todayKwh:0, monthKwh:0, totalKwh:0, lastMonth:null, lastDay:null, history:{} },
 };
 
@@ -514,8 +503,6 @@ async function loadFromCloud() {
       if (s.ejsService)                { state.ejsService        = s.ejsService;        setEl('ejs-service',  s.ejsService); }
       if (s.ejsTemplate)               { state.ejsTemplate       = s.ejsTemplate;       setEl('ejs-template', s.ejsTemplate); }
       if (s.ejsPubkey)                 { state.ejsPubkey         = s.ejsPubkey;         setEl('ejs-pubkey',   s.ejsPubkey); }
-      if (s.notifMode)                 { state.notifMode         = s.notifMode;         setEl('notif-mode',   s.notifMode); }
-      if (s.ntfyTopic)                 { state.ntfyTopic         = s.ntfyTopic;         setEl('ntfy-topic',   s.ntfyTopic); }
       if (s.guardianMode)              { setGuardianMode(s.guardianMode, false); }
     }
 
@@ -528,6 +515,11 @@ async function loadFromCloud() {
       state.costTracker.lastDay   = record.cost.lastDay   || null;
       state.costTracker.lastMonth = record.cost.lastMonth || null;
       updateCostUI();
+    }
+
+    // Merge cloud activity log
+    if (Array.isArray(record.activityLog) && record.activityLog.length) {
+      mergeCloudLog(record.activityLog);
     }
 
     // Update cloud guardian banner
@@ -560,8 +552,6 @@ async function saveSettingsToCloud() {
       ejsService:        state.ejsService,
       ejsTemplate:       state.ejsTemplate,
       ejsPubkey:         state.ejsPubkey,
-      notifMode:         state.notifMode,
-      ntfyTopic:         state.ntfyTopic,
     };
     await fetch('https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID, {
       method: 'PUT',
@@ -672,7 +662,6 @@ function updateCloudGuardianBanner(record) {
     clearInterval(cgCountdownTimer);
     banner.style.display   = 'none';
     okBanner.style.display = 'block';
-    setElText('cg-status', record.guardianResult || 'Watching. Set temp OK.');
     if (state.cgWasActive) {
       state.cgWasActive = false;
       addLog('🚨 Cloud Guardian turned A/C off at ' + new Date().toLocaleTimeString('en-AU', { hour:'2-digit', minute:'2-digit' }), 'alert');
@@ -758,6 +747,28 @@ function renderCostChart() {
     ctx.font=isToday?'bold 10px sans-serif':'10px sans-serif';ctx.textAlign='center';
     ctx.fillText(d.label,x+barW/2,H-8);
   });
+}
+
+// ── CLOUD LOG MERGE ──
+function mergeCloudLog(cloudEntries) {
+  // Convert cloud timestamps to local log format and merge
+  cloudEntries.forEach(entry => {
+    const timeStr = new Date(entry.time).toLocaleTimeString('en-AU', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    const dateStr = new Date(entry.time).toLocaleDateString('en-AU', { day:'2-digit', month:'2-digit' });
+    const label   = '[Cloud] ' + dateStr + ' ' + timeStr;
+    // Only add if not already in logs (avoid duplicates by checking message + time)
+    const key = entry.time + entry.msg;
+    if (!logs.some(l => l.cloudKey === key)) {
+      logs.push({ time: label, msg: entry.msg, type: entry.type, cloudKey: key });
+    }
+  });
+  // Sort by time descending (newest first) - cloud entries have numeric time, local have string
+  logs.sort((a, b) => {
+    const ta = a.cloudKey ? (cloudEntries.find(e => e.time + e.msg === a.cloudKey)?.time || 0) : 0;
+    const tb = b.cloudKey ? (cloudEntries.find(e => e.time + e.msg === b.cloudKey)?.time || 0) : 0;
+    return tb - ta;
+  });
+  renderLog();
 }
 
 // ── POLL ──
@@ -853,7 +864,7 @@ function updateControlUI() {
   const rt = document.getElementById('disp-room');
   if (rt) { rt.textContent = state.roomTemp!=null ? state.roomTemp.toFixed(1) : '--'; rt.className = 'temp-value '+(state.currentMode==='heat'?'heat-color':'cool-color'); }
   setElText('disp-outside', state.humidity!=null ? state.humidity+'%' : '--');
-  setElText('disp-set-temp', Number(state.setTemp).toFixed(1));
+  setElText('disp-set-temp', state.setTemp);
   updateCostUI();
   const zl = document.getElementById('zone-list');
   if (!zl) return;
@@ -888,7 +899,7 @@ async function setDryMode() {
   await actronCommand(buildPayload({ mode:2, fanSpeed:1 }));
 }
 async function adjustTemp(delta) {
-  const nt = Math.round((Math.min(30, Math.max(16, state.setTemp + delta))) * 2) / 2;
+  const nt = Math.min(30, Math.max(16, state.setTemp + delta));
   state.setTemp = nt; updateControlUI();
   addLog('Set temp → ' + nt + '°C', 'info');
   await actronCommand(buildPayload({ tempTarget:nt }));
@@ -969,8 +980,8 @@ document.getElementById('power-btn').addEventListener('click', togglePower);
 document.querySelectorAll('.mode-pill').forEach(p => { if (p.dataset.mode) p.addEventListener('click', () => setMode(p.dataset.mode)); });
 document.querySelectorAll('.fan-pill').forEach(p => p.addEventListener('click', () => setFanSpeed(parseInt(p.dataset.fan))));
 document.getElementById('btn-dry').addEventListener('click', setDryMode);
-document.getElementById('btn-temp-up').addEventListener('click',   () => adjustTemp(+0.5));
-document.getElementById('btn-temp-down').addEventListener('click', () => adjustTemp(-0.5));
+document.getElementById('btn-temp-up').addEventListener('click',   () => adjustTemp(+1));
+document.getElementById('btn-temp-down').addEventListener('click', () => adjustTemp(-1));
 document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
 document.getElementById('g-threshold').addEventListener('change', () => {
   state.guardianThreshold = parseInt(document.getElementById('g-threshold').value);
@@ -1011,21 +1022,13 @@ document.getElementById('btn-test-email').addEventListener('click', async () => 
   res.textContent='Check your inbox'; res.style.color='var(--success)';
   setTimeout(() => { res.textContent=''; }, 5000);
 });
-  ['ejs-service','ejs-template','ejs-pubkey'].forEach(id => {
+['ejs-service','ejs-template','ejs-pubkey'].forEach(id => {
   document.getElementById(id).addEventListener('change', () => {
     state.ejsService  = document.getElementById('ejs-service').value.trim();
     state.ejsTemplate = document.getElementById('ejs-template').value.trim();
     state.ejsPubkey   = document.getElementById('ejs-pubkey').value.trim();
     saveSettingsToCloud();
   });
-});
-document.getElementById('notif-mode').addEventListener('change', () => {
-  state.notifMode = document.getElementById('notif-mode').value;
-  saveSettingsToCloud(); addLog('Notification mode → ' + state.notifMode, 'info');
-});
-document.getElementById('ntfy-topic').addEventListener('change', () => {
-  state.ntfyTopic = document.getElementById('ntfy-topic').value.trim();
-  saveSettingsToCloud(); addLog('ntfy topic → ' + state.ntfyTopic, 'info');
 });
 document.getElementById('btn-reset-today').addEventListener('click', () => {
   state.costTracker.todayKwh=0; updateCostUI(); addLog('Today cost reset', 'info');
