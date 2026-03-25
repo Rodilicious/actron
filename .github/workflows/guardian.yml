@@ -2,7 +2,7 @@ name: Actron Temperature Guardian
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '*/15 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -136,28 +136,6 @@ jobs:
               }
             }
 
-            // ── PUSH NOTIFICATION (ntfy.sh) ──
-            async function sendPush(title, message) {
-              const topic = bin.settings?.ntfyTopic || 'actronguardian-rodc';
-              const resp = await fetch(`https://ntfy.sh/${topic}`, {
-                method: 'POST',
-                headers: { 'Title': title, 'Priority': 'high', 'Content-Type': 'text/plain' },
-                body: message
-              });
-              if (!resp.ok) throw new Error(`ntfy HTTP ${resp.status}`);
-            }
-
-            // ── NOTIFY (email, push, or both) ──
-            async function notify(title, message, overrideTemp, action) {
-              const mode = bin.settings?.notifMode || 'email';
-              if (mode === 'email' || mode === 'both') {
-                try { await sendEmail(overrideTemp, action); console.log('Email sent.'); } catch(e) { console.log('Email failed:', e.message); }
-              }
-              if (mode === 'push' || mode === 'both') {
-                try { await sendPush(title, message); console.log('Push sent.'); } catch(e) { console.log('Push failed:', e.message); }
-              }
-            }
-
             // ── EMAIL ──
             async function sendEmail(overrideTemp, action) {
               const resp = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
@@ -207,8 +185,6 @@ jobs:
             }
             let overrideFirstSeen = bin.overrideFirstSeen || null;
             let overrideTemp = bin.overrideTemp || null;
-            const lastPowerOn = bin.lastPowerOn ?? null;
-            const lastMode    = bin.lastMode    ?? null;
             let cost = bin.cost || { todayKwh: 0, monthKwh: 0, totalKwh: 0, lastDay: null, lastMonth: null, history: {} };
 
             // Auto-reset on new day/month
@@ -239,17 +215,6 @@ jobs:
 
             console.log(`Actron: power=${powerOn}, setTemp=${setTemp}C, mode=${mode}, fan=${fanSpeed} | Tuya: temp=${tuya.temp}C, humidity=${tuya.humidity}%`);
 
-            // ── STATE CHANGE NOTIFICATIONS ──
-            const MODE_NAMES = { 0:'Auto', 1:'Heat', 2:'Cool', 3:'Fan Only' };
-            if (lastPowerOn !== null && lastPowerOn !== powerOn) {
-              if (powerOn) {
-                await notify('A/C Turned On', `A/C turned on in ${MODE_NAMES[mode]||'Unknown'} mode at ${setTemp}°C`, setTemp, 'A/C turned on.');
-              } else {
-                await notify('A/C Turned Off', 'A/C has been turned off.', setTemp, 'A/C turned off.');
-              }
-            } else if (lastMode !== null && lastMode !== mode && powerOn) {
-              await notify('A/C Mode Changed', `Mode changed from ${MODE_NAMES[lastMode]||lastMode} to ${MODE_NAMES[mode]||mode}`, setTemp, `Mode changed to ${MODE_NAMES[mode]||mode}.`);
-            }
             // ── COST TRACKING ──
             if (powerOn) {
               const modeMap = POWER_MAP[mode] || POWER_MAP[2];
@@ -261,15 +226,19 @@ jobs:
               console.log(`Cost: +${kwh.toFixed(4)} kWh (${kw}kW x ${POLL_HRS}h) | today=${cost.todayKwh.toFixed(3)}, month=${cost.monthKwh.toFixed(3)}, total=${cost.totalKwh.toFixed(3)}`);
             }
 
+            // ── ACTIVITY LOG ──
+            const activityLog = Array.isArray(bin.activityLog) ? bin.activityLog : [];
+            function logEntry(msg, type) {
+              activityLog.unshift({ time: now, msg, type });
+              if (activityLog.length > 100) activityLog.pop();
+            }
+
             // ── GUARDIAN LOGIC ──
             let guardianResult;
             if (!isGuardianActive()) {
               if (bin.overrideFirstSeen) { overrideFirstSeen = null; overrideTemp = null; }
               guardianResult = 'Guardian inactive (' + GUARDIAN_MODE + (GUARDIAN_MODE === 'scheduled' ? ': ' + SCHEDULE_FROM + '-' + SCHEDULE_TO : '') + ')';
-            } else if (mode === 3) {
-              overrideFirstSeen = null;
-              guardianResult = 'Fan-only mode — Guardian inactive';
-              } else if (!powerOn) {
+            } else if (!powerOn) {
               overrideFirstSeen = null;
               guardianResult = 'AC is off';
             } else if (setTemp < THRESHOLD) {
@@ -277,6 +246,7 @@ jobs:
                 overrideFirstSeen = now;
                 overrideTemp = setTemp;
                 guardianResult = `Override detected: ${setTemp}C. Grace period started.`;
+                logEntry(`⚠️ Override detected — set temp ${setTemp}°C (threshold: ${THRESHOLD}°C). Grace period started.`, 'warn');
                 console.log(guardianResult);
               } else {
                 const remaining = GRACE_MS - (now - overrideFirstSeen);
@@ -290,6 +260,7 @@ jobs:
                   overrideFirstSeen = null;
                   overrideTemp = null;
                   guardianResult = `Acted: AC off=${acOff}, email=${emailSent}`;
+                  if (acOff) logEntry(`🚨 Guardian turned A/C off. Set temp was ${setTemp}°C.`, 'alert');
                 }
               }
             } else {
@@ -297,6 +268,7 @@ jobs:
                 overrideFirstSeen = null;
                 overrideTemp = null;
                 guardianResult = `Override corrected: ${setTemp}C`;
+                logEntry(`✅ Override corrected — set temp back to ${setTemp}°C.`, 'ok');
                 console.log(guardianResult);
               } else {
                 guardianResult = `OK: ${setTemp}C is fine`;
@@ -305,12 +277,10 @@ jobs:
 
             // Save everything to JSONBin
             try {
-             await saveBin({
+              await saveBin({
                 overrideFirstSeen,
                 overrideTemp,
-                guardianResult,
-                lastPowerOn: powerOn,
-                lastMode: mode,
+                activityLog,
                 sensor: { temp: tuya.temp, humidity: tuya.humidity, updatedAt: now },
                 cost,
                 settings: bin.settings || {}
