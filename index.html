@@ -980,6 +980,7 @@ function renderScheduleList() {
         '</div>' +
         '<div style="display:flex;gap:8px;align-items:center">' +
           '<div class="toggle ' + (s.enabled ? 'on' : '') + '" onclick="toggleSchedule(' + i + ')"></div>' +
+          '<button onclick="editSchedule(' + i + ')" style="background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;padding:4px 6px;border:0.5px solid var(--border2);border-radius:6px">Edit</button>' +
           '<button onclick="deleteSchedule(' + i + ')" style="background:none;border:none;color:var(--danger);font-size:18px;cursor:pointer;padding:4px">×</button>' +
         '</div>' +
       '</div>' +
@@ -1002,7 +1003,12 @@ window.deleteSchedule = function(idx) {
   addLog('Schedule deleted: ' + s.time, 'info');
 };
 
-function showAddScheduleModal() {
+window.editSchedule = function(idx) {
+  const s = state.schedules[idx];
+  showAddScheduleModal(idx, s);
+};
+
+function showAddScheduleModal(editIdx, editData) {
   // Remove existing modal if any
   const existing = document.getElementById('schedule-modal');
   if (existing) existing.remove();
@@ -1012,7 +1018,7 @@ function showAddScheduleModal() {
   modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1000;display:flex;align-items:flex-end;';
   modal.innerHTML = '<div style="background:var(--surface);border-radius:16px 16px 0 0;padding:1.5rem;width:100%;max-height:80vh;overflow-y:auto;">' +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">' +
-      '<div style="font-size:16px;font-weight:600">Add Schedule</div>' +
+      '<div style="font-size:16px;font-weight:600">' + (editIdx !== undefined ? 'Edit Schedule' : 'Add Schedule') + '</div>' +
       '<button onclick="document.getElementById(&quot;schedule-modal&quot;).remove()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">×</button>' +
     '</div>' +
     '<div class="setting-row" style="padding:8px 0">' +
@@ -1056,8 +1062,24 @@ function showAddScheduleModal() {
     '<button class="btn btn-primary" onclick="saveNewSchedule()" style="margin-top:1rem">Save Schedule</button>' +
   '</div>';
   document.body.appendChild(modal);
-  // defaults
-  modal._action = 'on'; modal._mode = 0; modal._fan = 0;
+  // defaults or pre-populate from editData
+  modal._editIdx = editIdx !== undefined ? editIdx : -1;
+  const action = editData ? editData.action : 'on';
+  const mode   = editData ? editData.mode   : 0;
+  const fan    = editData ? editData.fan    : 0;
+  modal._action = action; modal._mode = mode; modal._fan = fan;
+  if (editData) {
+    document.getElementById('new-sched-time').value = editData.time;
+    document.getElementById('new-sched-temp').value = editData.temp || 22;
+    // Set action buttons
+    document.getElementById('sched-action-on').className  = 'mode-pill' + (action==='on'  ? ' active-on' : '');
+    document.getElementById('sched-action-off').className = 'mode-pill' + (action==='off' ? ' active-on' : '');
+    document.getElementById('sched-on-options').style.display = action==='on' ? 'block' : 'none';
+    // Set mode buttons
+    ['cool','heat','fan','auto'].forEach((m,i) => { document.getElementById('smode-'+m).className = 'mode-pill' + (i===mode ? ' active-cool' : ''); });
+    // Set fan buttons
+    [0,1,2,3].forEach(i => { document.getElementById('sfan-'+i).className = 'mode-pill' + (i===fan ? ' active-on' : ''); });
+  }
 }
 
 window.setSchedAction = function(action) {
@@ -1086,18 +1108,18 @@ window.saveNewSchedule = function() {
   const time   = document.getElementById('new-sched-time').value;
   const temp   = parseInt(document.getElementById('new-sched-temp').value) || 22;
   if (!time) { alert('Please set a time'); return; }
-  state.schedules.push({
-    time,
-    action:  modal._action,
-    temp,
-    mode:    modal._mode,
-    fan:     modal._fan,
-    enabled: true,
-  });
+  const entry = { time, action: modal._action, temp, mode: modal._mode, fan: modal._fan, enabled: true };
+  if (modal._editIdx >= 0) {
+    entry.enabled = state.schedules[modal._editIdx].enabled; // preserve enabled state
+    state.schedules[modal._editIdx] = entry;
+    addLog('Schedule updated: ' + time + ' ' + modal._action, 'ok');
+  } else {
+    state.schedules.push(entry);
+    addLog('Schedule added: ' + time + ' ' + modal._action, 'ok');
+  }
   modal.remove();
   renderScheduleList();
   saveSettingsToCloud();
-  addLog('Schedule added: ' + time + ' ' + modal._action, 'ok');
 };
 
 // ── NAV ──
