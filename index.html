@@ -1013,7 +1013,7 @@ function showAddScheduleModal() {
   modal.innerHTML = '<div style="background:var(--surface);border-radius:16px 16px 0 0;padding:1.5rem;width:100%;max-height:80vh;overflow-y:auto;">' +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">' +
       '<div style="font-size:16px;font-weight:600">Add Schedule</div>' +
-      '<button onclick="document.getElementById('schedule-modal').remove()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">×</button>' +
+      '<button onclick="document.getElementById(&quot;schedule-modal&quot;).remove()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">×</button>' +
     '</div>' +
     '<div class="setting-row" style="padding:8px 0">' +
       '<div class="setting-label">Time</div>' +
@@ -1022,8 +1022,8 @@ function showAddScheduleModal() {
     '<div class="setting-row" style="padding:8px 0">' +
       '<div class="setting-label">Action</div>' +
       '<div style="display:flex;gap:6px">' +
-        '<button class="mode-pill active-on" id="sched-action-on" onclick="setSchedAction('on')" style="padding:6px 14px;font-size:12px">Turn ON</button>' +
-        '<button class="mode-pill" id="sched-action-off" onclick="setSchedAction('off')" style="padding:6px 14px;font-size:12px">Turn OFF</button>' +
+        '<button class="mode-pill active-on" id="sched-action-on" onclick="setSchedAction(&quot;on&quot;)" style="padding:6px 14px;font-size:12px">Turn ON</button>' +
+        '<button class="mode-pill" id="sched-action-off" onclick="setSchedAction(&quot;off&quot;)" style="padding:6px 14px;font-size:12px">Turn OFF</button>' +
       '</div>' +
     '</div>' +
     '<div id="sched-on-options">' +
