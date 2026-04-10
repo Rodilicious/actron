@@ -208,7 +208,6 @@ body {
           <div class="mode-pill" data-mode="auto">Auto</div>
         </div>
         <div class="fan-row" id="fan-row">
-          <div class="fan-pill" data-fan="0">Auto</div>
           <div class="fan-pill" data-fan="1">Low</div>
           <div class="fan-pill" data-fan="2">Medium</div>
           <div class="fan-pill" data-fan="3">High</div>
@@ -487,7 +486,7 @@ const POWER_MAP      = {
 // ── STATE (runtime only — all persisted settings come from JSONBin) ──
 window.state = {
   auth: null, isDemo: false,
-  powerOn: false, currentMode: 'cool', setTemp: 22, fanSpeed: 0,
+  powerOn: false, currentMode: 'cool', setTemp: 22, fanSpeed: 1,
   roomTemp: null, humidity: null, zones: [],
   pollInterval: 5, pollTimer: null,
   cgWasActive: false,
@@ -915,7 +914,7 @@ async function setMode(mode) {
 }
 async function setFanSpeed(speed) {
   state.fanSpeed = speed; updateControlUI();
-  addLog('Fan speed → ' + ['Auto','Low','Medium','High'][speed], 'info');
+  addLog('Fan speed → ' + ({1:'Low',2:'Medium',3:'High'}[speed]||speed), 'info');
   await actronCommand(buildPayload({ fanSpeed:speed }));
 }
 async function setDryMode() {
@@ -970,7 +969,7 @@ function renderScheduleList() {
   }
   container.innerHTML = state.schedules.map((s, i) => {
     const actionLabel = s.action === 'on'
-      ? 'Turn ON — ' + s.temp + '°C, ' + ['Cool','Heat','Fan','Auto'][s.mode] + ', ' + ['Auto','Low','Med','High'][s.fan] + ' fan'
+      ? 'Turn ON — ' + s.temp + '°C, ' + ['Cool','Heat','Fan','Auto'][s.mode] + ', ' + ({1:'Low',2:'Med',3:'High'}[s.fan]||s.fan) + ' fan'
       : 'Turn OFF';
     return '<div class="card" style="margin-bottom:0.5rem;opacity:' + (s.enabled ? '1' : '0.5') + '">' +
       '<div style="display:flex;align-items:center;justify-content:space-between">' +
@@ -1052,7 +1051,7 @@ function showAddScheduleModal(editIdx, editData) {
       '<div class="setting-row" style="padding:8px 0;border-bottom:none">' +
         '<div class="setting-label">Fan speed</div>' +
         '<div style="display:flex;gap:6px">' +
-          '<button class="mode-pill active-on" id="sfan-0" onclick="setSchedFan(0)" style="padding:5px 10px;font-size:11px">Auto</button>' +
+          '<button class="mode-pill active-on" id="sfan-1" onclick="setSchedFan(1)" style="padding:5px 10px;font-size:11px">Low</button>' +
           '<button class="mode-pill" id="sfan-1" onclick="setSchedFan(1)" style="padding:5px 10px;font-size:11px">Low</button>' +
           '<button class="mode-pill" id="sfan-2" onclick="setSchedFan(2)" style="padding:5px 10px;font-size:11px">Med</button>' +
           '<button class="mode-pill" id="sfan-3" onclick="setSchedFan(3)" style="padding:5px 10px;font-size:11px">High</button>' +
@@ -1078,7 +1077,7 @@ function showAddScheduleModal(editIdx, editData) {
     // Set mode buttons
     ['cool','heat','fan','auto'].forEach((m,i) => { document.getElementById('smode-'+m).className = 'mode-pill' + (i===mode ? ' active-cool' : ''); });
     // Set fan buttons
-    [0,1,2,3].forEach(i => { document.getElementById('sfan-'+i).className = 'mode-pill' + (i===fan ? ' active-on' : ''); });
+    [1,2,3].forEach(i => { document.getElementById('sfan-'+i).className = 'mode-pill' + (i===fan ? ' active-on' : ''); });
   }
 }
 
@@ -1099,7 +1098,7 @@ window.setSchedMode = function(mode) {
 window.setSchedFan = function(fan) {
   const modal = document.getElementById('schedule-modal');
   modal._fan = fan;
-  [0,1,2,3].forEach(i => {
+  [1,2,3].forEach(i => {
     document.getElementById('sfan-'+i).className = 'mode-pill' + (i===fan ? ' active-on' : '');
   });
 };
