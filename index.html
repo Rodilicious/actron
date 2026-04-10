@@ -521,7 +521,7 @@ async function loadFromCloud() {
       if (s.scheduleFrom)              { state.scheduleFrom      = s.scheduleFrom;      setEl('g-from',      s.scheduleFrom); }
       if (s.scheduleTo)                { state.scheduleTo        = s.scheduleTo;        setEl('g-to',        s.scheduleTo); }
       if (s.tariff           != null)  { state.tariff            = s.tariff;            setEl('g-tariff',    s.tariff); }
-      if (s.zoneNames)                 { state.zoneNames         = s.zoneNames;         renderZoneNameInputs(); }
+      if (s.zoneNames && Object.keys(s.zoneNames).length) { state.zoneNames = s.zoneNames; renderZoneNameInputs(); }
       if (s.ejsService)                { state.ejsService        = s.ejsService;        setEl('ejs-service',  s.ejsService); }
       if (s.ejsTemplate)               { state.ejsTemplate       = s.ejsTemplate;       setEl('ejs-template', s.ejsTemplate); }
       if (s.ejsPubkey)                 { state.ejsPubkey         = s.ejsPubkey;         setEl('ejs-pubkey',   s.ejsPubkey); }
@@ -571,7 +571,7 @@ async function saveSettingsToCloud() {
       scheduleFrom:      state.scheduleFrom,
       scheduleTo:        state.scheduleTo,
       tariff:            state.tariff,
-      zoneNames:         state.zoneNames,
+      zoneNames:         Object.keys(state.zoneNames).length ? state.zoneNames : undefined,
       ejsService:        state.ejsService,
       ejsTemplate:       state.ejsTemplate,
       ejsPubkey:         state.ejsPubkey,
